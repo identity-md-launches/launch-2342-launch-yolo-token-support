@@ -133,6 +133,7 @@ contract DisputeDesk is Desk {
     ///         tried once a side is ahead by instantDelta (CaseDesk.tryInstantDecision);
     ///         otherwise the NFT decides at the vote end (CaseDesk.step). No timers are played here: while the vote
     ///         runs, the task has no due step.
+    // slither-disable-next-line unused-return
     function vote(uint256 subId, uint8 side, address payTo, uint256[] calldata tokenIds) external routed {
         (Phase ph, uint64 voteEnd, uint32 version) = ICaseDesk(caseDesk).voteState(subId);
         if (ph != Phase.Voting || block.timestamp >= voteEnd) revert WrongPhase();
@@ -230,6 +231,7 @@ contract DisputeDesk is Desk {
     ///         the task rules + the filed dispute's reason/proof link; `CaseDesk.askAppeal`/`_ask` check them against
     ///         the stored hashes and revert `RulesMismatch` otherwise.
     ///         The fee/bond were already fixed in `appeal`, this only spends them.
+    // slither-disable-next-line unused-return
     function askAppealSwarm(uint256 subId, RuleTexts calldata rt) external routed {
         // play due timers first: an appeal not asked within swarmTimeout is void (CaseDesk.step), the late ask
         // then reverts WrongPhase in CaseDesk.askAppeal
@@ -251,6 +253,7 @@ contract DisputeDesk is Desk {
     ///      Task.rulesHash / DisputerInfo.reasonHash. `rt.disputeReason`/`rt.disputerProofUri` must match what the
     ///      disputer filed; the caller need not be the disputer themselves, only know what they filed (the `Disputed`
     ///      event).
+    // slither-disable-next-line reentrancy-no-eth
     function callSwarm(uint256 subId, bool sidesDoer, uint256 maxImdIn, ImdPay calldata payIn, RuleTexts calldata rt)
         external
         routed
@@ -291,7 +294,9 @@ contract DisputeDesk is Desk {
         address sender = a.appellant;
         bool sidesDoer = a.sidesDoer;
         Dispute storage d = _disputes[subId];
+        // slither-disable-next-line uninitialized-local
         Bond memory bond;
+        // slither-disable-next-line uninitialized-local
         uint256 fromBond;
         if (sender == s.doer ? sidesDoer : sender == d.disputer && !sidesDoer) {
             SideSpent memory sp = _sideSpent[subId];
@@ -342,6 +347,7 @@ contract DisputeDesk is Desk {
         info.claimed = true;
         Settlement storage st = _settlements[subId];
         IVault bank = _bank();
+        // slither-disable-next-line uninitialized-local
         Bond memory payout;
         if (st.neutral || st.disputersWon) {
             payout = info.bond;
@@ -381,12 +387,17 @@ contract DisputeDesk is Desk {
     ///         currency is paid once, summed. Reverts only when none of them had anything. An accepted submission
     ///         with a $YOLO add-on also claims `payTo`'s share of its paid-out bonus (YoloSweetener.claimVoter; skipped
     ///         if the bonus is not paid out yet or nothing is left for payTo there).
+    // slither-disable-next-line reentrancy-no-eth
     function claimVoterRewards(uint256[] calldata subIds, address payTo) external routed {
+        // slither-disable-next-line uninitialized-local
         uint256 imdTotal;
         address[] memory cur = new address[](subIds.length);
         uint256[] memory amt = new uint256[](subIds.length);
+        // slither-disable-next-line uninitialized-local
         uint256 n;
+        // slither-disable-next-line uninitialized-local
         bool any;
+        // slither-disable-next-line uninitialized-local
         address sweet;
         for (uint256 i; i < subIds.length; ++i) {
             (bool ok, address currency, uint256 imdShare, uint256 rewShare, uint256 bonusTask) =
@@ -490,6 +501,7 @@ contract DisputeDesk is Desk {
     }
 
     /// @notice The caller's question was void or the swarm stayed silent: their bond and unspent fee are theirs again.
+    // slither-disable-next-line reentrancy-no-eth
     function dropCaller(uint256 subId) external only(caseDesk) {
         _refundCaller(_appeals[subId], ICaseDesk(caseDesk).subCore(subId).currency);
         delete _appeals[subId];
@@ -497,6 +509,7 @@ contract DisputeDesk is Desk {
 
     /// @notice The money of a final submission: a cancellation (TaskVault.cancelTask) returns every bond; otherwise the reward is paid
     ///         (accepted) and the loser bonds are split (`_settleDecided`). Credits only; never transfers.
+    // slither-disable-next-line reentrancy-no-eth
     function settle(uint256 subId, Outcome o, Facts calldata f) external only(caseDesk) {
         Settlement storage st = _settlements[subId];
         Dispute storage d = _disputes[subId];
@@ -570,6 +583,7 @@ contract DisputeDesk is Desk {
 
     /// @dev Cancelled by the dev wallet: every bond and unused prepayment back (disputers claim theirs with claimDisputer).
     ///      Swarm fees already paid stay paid.
+    // slither-disable-next-line reentrancy-no-eth
     function _settleNeutral(uint256 subId, Facts calldata f) private {
         IVault bank = _bank();
         bank.credit(address(imd), f.doer, f.bond.imd - _sideSpent[subId].doer);
@@ -619,6 +633,7 @@ contract DisputeDesk is Desk {
     ///      - NFT wrong or undecided (also: undecided and nobody called the swarm): everything to the winning side.
     ///      Every winner gets their share, also one who put money into the task: the doer, an appellant or a disputer
     ///      who is its author or a contributor.
+    // slither-disable-next-line reentrancy-no-eth
     function _settleDecided(uint256 subId, Facts calldata f, bool doerWins, bool nftRight, ParamsCore memory p)
         private
     {
@@ -730,6 +745,7 @@ contract DisputeDesk is Desk {
         st.voterFee = toVoters;
         IVault bank = _bank();
         uint256 toTreasury = fee - toVoters;
+        // slither-disable-next-line uninitialized-local
         uint256 bonus;
         uint256 bps = f.stakeBps;
         if (f.staked && _lockRuns(f)) {

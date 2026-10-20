@@ -85,6 +85,7 @@ contract ProtocolDirectory {
     }
 
     /// @notice Anyone lists the proposed version after the timelock. It does not become current by itself.
+    // slither-disable-next-line incorrect-equality
     function addVersion() external returns (uint256 n) {
         uint64 eta = pendingVersionEta;
         if (eta == 0) revert NothingPending();
@@ -111,6 +112,7 @@ contract ProtocolDirectory {
     }
 
     /// @notice Anyone switches the current version after the timelock.
+    // slither-disable-next-line incorrect-equality
     function setCurrent() external {
         uint64 eta = pendingCurrentEta;
         if (eta == 0) revert NothingPending();

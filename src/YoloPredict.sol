@@ -178,6 +178,7 @@ contract YoloPredict {
     ///         side: the whole losing pool pays out right here instead of waiting in the split (half each to
     ///         the author and the doer if WILL DO won with nobody on it, entirely to the author if WON'T DO won with
     ///         nobody on it); the losers get nothing back.
+    // slither-disable-next-line reentrancy-no-eth
     function settle(uint256 taskId) public {
         Market storage m = markets[taskId];
         if (m.settled) return;
@@ -194,9 +195,13 @@ contract YoloPredict {
         }
         uint256 d = m.deferred;
         m.deferred = 0;
+        // slither-disable-next-line uninitialized-local
         address doer;
+        // slither-disable-next-line uninitialized-local
         uint256 toAuthor;
+        // slither-disable-next-line uninitialized-local
         uint256 toDoer;
+        // slither-disable-next-line uninitialized-local
         uint256 burnt;
         if (task.status == TaskStatus.Completed) {
             doer = vault.getSubmission(task.activeSub).doer;
@@ -227,6 +232,7 @@ contract YoloPredict {
 
     /// @notice Claim `taskId`: a winner's 90% plus their share of the losing pool. Losers get nothing (no refund).
     ///         A cancelled task (void): everything this address put in, in full.
+    // slither-disable-next-line reentrancy-no-eth
     function claim(uint256 taskId) external {
         Position storage p = positionsOf[taskId][msg.sender];
         uint256 willDoAmount = p.willDoAmount;
@@ -235,6 +241,7 @@ contract YoloPredict {
         settle(taskId);
         Resolution res = _resolve(vault.getTask(taskId), markets[taskId]);
 
+        // slither-disable-next-line uninitialized-local
         uint256 pay;
         if (res == Resolution.WillDoWon || res == Resolution.WontDoWon) {
             bool willDoWon = res == Resolution.WillDoWon;

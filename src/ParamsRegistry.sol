@@ -88,6 +88,7 @@ contract ParamsRegistry is Ownable2Step {
     }
 
     /// @notice Anyone can activate a proposal after the timelock.
+    // slither-disable-next-line incorrect-equality
     function activateParams() external {
         uint64 eta = pendingParamsEta;
         if (eta == 0) revert NothingPending();

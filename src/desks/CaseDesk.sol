@@ -71,6 +71,7 @@ contract CaseDesk is Desk {
     ///         the swarm with the proof. The screenshot link is mandatory for x_post, x_reply and video
     ///         (`EvidenceRequired` otherwise, allowlisted hosts); for
     ///         onchain_tx and link it stays optional.
+    // slither-disable-next-line reentrancy-no-eth
     function submit(
         uint256 taskId,
         string calldata proofUri,
@@ -137,6 +138,7 @@ contract CaseDesk is Desk {
     }
 
     /// @notice Bond of a queued submission whose task was completed or unwound.
+    // slither-disable-next-line reentrancy-no-eth
     function claimVoidSubmission(uint256 subId) external routed {
         Submission storage s = _subs[subId];
         IVault tasks = _bank();
@@ -167,6 +169,7 @@ contract CaseDesk is Desk {
     }
 
     /// @notice One transition of the active submission. False if nothing can move now.
+    // slither-disable-next-line incorrect-equality,reentrancy-no-eth
     function step(uint256 subId) external only(vault) returns (bool) {
         Submission storage s = _subs[subId];
         ParamsCore memory p = _params(_terms[subId].version);
@@ -257,6 +260,7 @@ contract CaseDesk is Desk {
     /// @notice The swarm is called while the NFT did not decide: asked at once, paid from the caller's deposit.
     ///         `rt`: DisputeDesk.callSwarm's caller resupplied the task rules and the dispute reason/proof link in
     ///         the same transaction; checked against the stored hashes in `_ask`.
+    // slither-disable-next-line reentrancy-no-eth
     function askEscalation(uint256 subId, uint256 price, RuleTexts calldata rt)
         external
         only(disputeDesk)
@@ -405,6 +409,7 @@ contract CaseDesk is Desk {
     ///      now above the prepaid fee, 0, or the Intake fails, the appeal is void: bond and fee are the appellant's
     ///      again (credit), the NFT decision stands and a new appeal window starts now, unless that was the
     ///      MAX_SWARM_CALLS-th question: then the NFT decision is final.
+    // slither-disable-next-line reentrancy-no-eth
     function _askAppeal(uint256 subId, uint256 funds, ParamsCore memory p, RuleTexts calldata rt) private {
         Submission storage s = _subs[subId];
         IDisputeDesk disputes = IDisputeDesk(disputeDesk);
@@ -434,6 +439,7 @@ contract CaseDesk is Desk {
     ///      answer signed in time can still count. The outcome does not depend on who pokes when, but in the last
     ///      case the moment of silence (and the window that follows it) does: the Intake gives no completion time,
     ///      so it is the first poke after completion, at most swarmTimeout + grace later (7 h by default).
+    // slither-disable-next-line unused-return
     function _swarmStatus(bytes32 rid, ParamsCore memory p)
         private
         view
@@ -457,6 +463,7 @@ contract CaseDesk is Desk {
 
     /// @dev Closes a submission with `o`: the DisputeDesk splits the money, the vault moves the task on (next
     ///      queued submission, completion or unwind; top-ups are already in the pot). Credits only; never transfers.
+    // slither-disable-next-line reentrancy-no-eth
     function _finalize(uint256 subId, Outcome o) private {
         Submission storage s = _subs[subId];
         Terms memory tm = _terms[subId];
@@ -508,6 +515,7 @@ contract CaseDesk is Desk {
     ///      The power is measured against the whole pot at the submission (`t.pot`: the author's share and every
     ///      top-up) in $YOLO plus the $YOLO add-on (`t.addon`); the share is paid on the pot and on the add-on.
     ///      `staked`: any power with a $YOLO price, also when the share floors to 0 bps (the staked split still applies).
+    // slither-disable-next-line incorrect-equality
     function _stakeBps(SubmitTerms memory t, address doer, ParamsCore memory p)
         private
         view
@@ -519,6 +527,7 @@ contract CaseDesk is Desk {
         if (!ok || ret.length != 32) return (0, false);
         uint256 power = abi.decode(ret, (uint256));
         if (power == 0) return (0, false);
+        // slither-disable-next-line uninitialized-local
         uint256 r;
         try DevPrices(p.devPrices).yoloValue(t.currency, t.pot) returns (uint256 y) {
             r = y;

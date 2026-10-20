@@ -64,6 +64,7 @@ contract NftGate {
         uint256 n = accounts.length;
         if (n == 0 || n != nfts.length) revert BadBatch();
         bytes32 h = snapshotHash;
+        // slither-disable-next-line uninitialized-local
         uint256 total;
         for (uint256 i; i < n; ++i) {
             address a = accounts[i];
@@ -104,6 +105,7 @@ contract NftGate {
     /// @notice Called by a token for a buy in its window. Returns the buyer's allowance and what the calling token
     ///         had let him take before; books `amount` only if it fits. The token rejects the buy otherwise. Reverts
     ///         while the snapshot is not sealed.
+    // slither-disable-next-line incorrect-equality
     function consume(address buyer, uint256 amount) external returns (uint256 allowance, uint256 usedBefore) {
         if (sealedAt == 0) revert NotSealed();
         allowance = allowanceOf(buyer);

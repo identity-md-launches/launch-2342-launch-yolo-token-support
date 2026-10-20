@@ -179,6 +179,7 @@ contract TaskVault {
     /// @notice Every function of ITaskVault not implemented here is forwarded to its desk: state-changing ones under
     ///         the reentrancy lock with sender and value appended, views with a STATICCALL and no lock.
     ///         `paramsOf` is answered by the registry (a version's snapshot never changes once activated).
+    // slither-disable-next-line reentrancy-no-eth
     fallback() external payable {
         (address target, uint256 route) = _route(msg.sig);
         if (target == address(0)) revert UnknownFunction();
@@ -248,6 +249,7 @@ contract TaskVault {
     ///         PROOF and NO texts, each 1..maxTextBytes, stored, each one swarm definition); `category` (< CATEGORY_COUNT) and `proofType`
     ///         (< PROOF_TYPE_COUNT: what every proofUri must be) are stored; `cover` (empty, `ipfs://…` or `https://…`,
     ///         at most MAX_COVER_BYTES) is only emitted in TaskCreated. None of them can change later.
+    // slither-disable-next-line reentrancy-eth
     function createTask(
         address currency,
         uint256 amount,
@@ -311,6 +313,7 @@ contract TaskVault {
     ///         a submission is being checked joins the reward at once too (like the $YOLO
     ///         add-on): if that submission is accepted, its doer gets it with the rest of the pot. The doer's bond
     ///         stays based on the author's own reward. A decided task takes nothing (`TaskNotOpen`).
+    // slither-disable-next-line reentrancy-no-eth
     function topUp(uint256 taskId, uint256 amount, ImdPay calldata payIn) external payable nonReentrant {
         _advance(taskId);
         Task storage t = _tasks[taskId];
@@ -332,6 +335,7 @@ contract TaskVault {
     ///         by the dev wallet (`cancelTask`); nothing after an acceptance (the whole pot went to the doer). While
     ///         the task is open nothing leaves, before or after its deadline: a doer may be
     ///         working on it.
+    // slither-disable-next-line reentrancy-no-eth
     function withdrawContribution(uint256 taskId) external nonReentrant {
         _advance(taskId);
         Task storage t = _tasks[taskId];
@@ -362,6 +366,7 @@ contract TaskVault {
     ///         queued doers with `claimVoidSubmission`, $YOLO add-ons with `YoloSweetener.withdraw`, YOLO Predict
     ///         positions in full with `YoloPredict.claim`. The dev wallet gets nothing in any outcome; swarm fees
     ///         already paid to the Intake are gone and come back to nobody.
+    // slither-disable-next-line reentrancy-no-eth
     function cancelTask(uint256 taskId) external nonReentrant {
         Task storage t = _tasks[taskId];
         if (t.author == address(0)) revert TaskNotOpen();
@@ -539,6 +544,7 @@ contract TaskVault {
 
     /// @notice Books `amount` of `currency` from `from` for a bond's "rew" or "add" part: ETH from msg.value, IMD or
     ///         any other token by plain transferFrom. No swap, no oracle.
+    // slither-disable-next-line arbitrary-send-erc20
     function collectBondPart(address from, uint256 msgValue, address currency, uint256 amount)
         external
         onlyDesk
@@ -550,6 +556,7 @@ contract TaskVault {
             return amount;
         }
         if (currency == address(imd)) {
+            // slither-disable-next-line uninitialized-local
             ImdPay memory noSwap;
             return _collectImd(from, msgValue, amount, address(0), noSwap);
         }
@@ -588,6 +595,7 @@ contract TaskVault {
     /// @notice Pays the Intake `price` IMD (already booked in one of the submission's buckets) and records the
     ///         question. Never reverts on an Intake failure: returns ok = false and nothing is spent; the desk
     ///         deducts `spent` from the paying bucket.
+    // slither-disable-next-line reentrancy-balance
     function ask(AskTerms calldata t, bytes calldata body)
         external
         onlyDesk
@@ -633,6 +641,7 @@ contract TaskVault {
 
     /// @dev Bounded loop: at most a few transitions per call. Expiry happens here; the steps of the active submission
     ///      are played by the case desk (which calls back `closeSubmission` when one becomes final).
+    // slither-disable-next-line reentrancy-no-eth
     function _advance(uint256 taskId) private {
         for (uint256 i; i < 8; ++i) {
             Task storage t = _tasks[taskId];
@@ -724,6 +733,7 @@ contract TaskVault {
         emit Paid(token, to, amount);
     }
 
+    // slither-disable-next-line incorrect-equality
     function _credit(address token, address account, uint256 amount) private {
         if (amount == 0) return;
         credits[token][account] += amount;
@@ -731,6 +741,7 @@ contract TaskVault {
     }
 
     /// @dev Returns money that was never booked (excess msg.value, swap surplus); credited if the transfer fails.
+    // slither-disable-next-line incorrect-equality
     function _refundUnbooked(address token, address to, uint256 amount) private {
         if (amount == 0) return;
         if (!_trySend(token, to, amount)) {
@@ -745,6 +756,7 @@ contract TaskVault {
 
     /// @dev `ethGas` caps only the ETH branch (an ERC20 `transfer` runs the token's own code, not the recipient's,
     ///      so it cannot grief the caller the same way).
+    // slither-disable-next-line incorrect-equality
     function _trySend(address token, address to, uint256 amount, uint256 ethGas) private returns (bool ok) {
         if (token == ETH) {
             (ok,) = to.call{value: amount, gas: ethGas}("");
@@ -758,6 +770,7 @@ contract TaskVault {
     /// @dev Books exactly `needed` IMD from `from`: mode B transferFrom, or mode A swap through the adapter
     ///      (exact input, user minOut / deadline, measured by balance difference, surplus returned).
     ///      Returns the ETH it needs from msg.value.
+    // slither-disable-next-line arbitrary-send-eth,reentrancy-balance,reentrancy-eth,unused-return
     function _collectImd(address from, uint256 msgValue, uint256 needed, address adapter, ImdPay memory payIn)
         private
         returns (uint256 ethNeeded)

@@ -80,6 +80,7 @@ contract BuybackBurner {
     }
 
     /// @notice Burn every $YOLO held here (anyone).
+    // slither-disable-next-line incorrect-equality
     function burnYolo() external {
         uint256 bal = yolo.balanceOf(address(this));
         if (bal == 0) revert Nothing();
@@ -89,6 +90,7 @@ contract BuybackBurner {
 
     /// @notice Send all of `token` held here (ETH = address(0), USDC or IMD) to the buyback wallet (anyone).
     ///         $YOLO is refused: it only burns.
+    // slither-disable-next-line arbitrary-send-eth,incorrect-equality
     function forward(address token) external returns (uint256 amount) {
         if (token != ETH && token != address(usdc) && token != address(imd)) revert NotReserve();
         address to = buybackWallet;

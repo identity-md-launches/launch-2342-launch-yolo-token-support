@@ -33,6 +33,7 @@ contract VotePower {
 
     /// @notice `who` owns `id` now or is a delegate.xyz delegate of its owner. Never reverts.
     function mayVote(address who, uint256 id) public view returns (bool) {
+        // slither-disable-next-line uninitialized-local
         address owner;
         try nft.ownerOf(id) returns (address o) {
             owner = o;

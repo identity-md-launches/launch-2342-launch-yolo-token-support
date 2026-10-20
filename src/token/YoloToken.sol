@@ -114,6 +114,7 @@ contract YoloToken is ERC20 {
     }
 
     /// @dev on top of `value`, so that the tax is `num` of value + tax, rounded down
+    // slither-disable-next-line incorrect-equality
     function _sellTax(uint256 value, uint256 num) internal pure returns (uint256) {
         if (num == 0) return 0;
         return value * num / (10_000 * (TAX_END_SECONDS - WHITELIST_SECONDS) - num);

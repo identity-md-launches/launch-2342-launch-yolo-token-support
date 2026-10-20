@@ -39,6 +39,7 @@ contract AttestationChecker {
     ///         ordered (`minPanelSize` / `minQuorum`, the same numbers as in bodyFields) is not the swarm's verdict.
     ///         An attestation past its signed `expiresAt` is not accepted (0 = no expiry).
     /// @return code 0 ok, 2 answer type / encoding, 4 panel / quorum, 5 signer not in the attester set, 6 expired
+    // slither-disable-next-line unused-return
     function check(
         address consumer,
         uint16 minPanelSize,

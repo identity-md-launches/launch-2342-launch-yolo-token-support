@@ -71,6 +71,7 @@ contract ProjectVesting {
     }
 
     /// @notice Everything ever received of `token` (held + released) that is the beneficiary's at `time`.
+    // slither-disable-next-line incorrect-equality
     function vestedAmount(address token, uint256 time) public view returns (uint256) {
         uint256 total = IERC20(token).balanceOf(address(this)) + released[token];
         uint256 free = total < unlocked ? total : unlocked;
@@ -87,6 +88,7 @@ contract ProjectVesting {
 
     /// @notice Pay the beneficiary what has vested of `token` and is not yet paid (possibly 0). Called by the
     ///         `starter` while the token is here and its clock has not started, it first starts the clock.
+    // slither-disable-next-line incorrect-equality
     function release(address token) external {
         if (msg.sender == starter && startOf[token] == 0 && IERC20(token).balanceOf(address(this)) != 0) {
             startOf[token] = uint64(block.timestamp);

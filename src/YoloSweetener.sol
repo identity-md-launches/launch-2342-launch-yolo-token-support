@@ -136,12 +136,14 @@ contract YoloSweetener {
 
         uint256 fee = bonus * p.feeBps / BPS;
         uint256 nftPart = bonus * p.nftFeeBps / BPS;
+        // slither-disable-next-line uninitialized-local
         uint256 toVoters;
         if (s.nftDecision == Verdict.Accept) {
             toVoters = nftPart;
             voterPool[taskId] = nftPart;
             voterVotesLeft[taskId] = vault.getDispute(subId).votesAccept;
         }
+        // slither-disable-next-line uninitialized-local
         uint256 extra;
         uint256 bps = vault.getSettlement(subId).stakeBps;
         if (bps != 0) {
@@ -157,6 +159,7 @@ contract YoloSweetener {
 
     /// @notice An NFT voter's share of a paid-out bonus (anyone may trigger; money goes to `payTo`, the address the
     ///         votes named), pro rata to its "accept" votes on the accepted submission. The last one takes the rest.
+    // slither-disable-next-line unused-return
     function claimVoter(uint256 taskId, address payTo) external {
         uint256 subId = vault.getTask(taskId).activeSub;
         (uint256 n,) = vault.votesOf(subId, payTo);

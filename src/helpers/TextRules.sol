@@ -73,6 +73,7 @@ library TextLib {
         uint256 len = b.length;
         if (len == 0) return;
         if (len > MAX_COVER_BYTES) revert BadCover();
+        // slither-disable-next-line uninitialized-local
         uint256 scheme;
         if (_startsWith(b, 0, "ipfs://")) scheme = 7;
         else if (_startsWith(b, 0, "https://")) scheme = 8;

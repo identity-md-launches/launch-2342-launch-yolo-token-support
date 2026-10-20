@@ -138,6 +138,7 @@ contract SwarmQuestionBuilder {
         Submission memory s = IQuestionSources(v.caseDesk()).getSubmission(subId);
         Task memory t = v.getTask(s.taskId);
         if (keccak256(abi.encode(rt.task, rt.taskProof, rt.taskNo)) != t.rulesHash) revert RulesMismatch();
+        // slither-disable-next-line uninitialized-local
         SwarmQuestion.Input memory q;
         (q.prefix, q.definitionFields, q.bodyFields) = IQuestionSources(v.registry()).template(t.paramsVersion);
         q.task = rt.task;

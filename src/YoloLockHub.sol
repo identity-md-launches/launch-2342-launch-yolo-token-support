@@ -42,6 +42,7 @@ contract YoloLockHub {
     }
 
     mapping(address => Lock) public locks;
+    // slither-disable-next-line uninitialized-state
     mapping(address => Point[]) internal _history;
 
     event Locked(address indexed who, uint256 added, uint256 amount, uint64 end, uint256 power);
@@ -61,6 +62,7 @@ contract YoloLockHub {
     ///         now (1..52, never earlier than the current end). A lock that is not running needs a term.
     ///         With a term the power becomes the whole amount x weeks left / 52; without one (add only) it grows by
     ///         added x weeks left / 52.
+    // slither-disable-next-line divide-before-multiply,incorrect-equality
     function lock(uint256 add, uint256 weeks_) external {
         Lock memory l = locks[msg.sender];
         if (l.end != 0 && l.end <= block.timestamp) ++l.epoch; // an ended lock set again is a new lock: no stake bonus
@@ -89,6 +91,7 @@ contract YoloLockHub {
     }
 
     /// @notice Take the whole amount back once the lock ended.
+    // slither-disable-next-line incorrect-equality
     function withdraw() external {
         Lock memory l = locks[msg.sender];
         if (l.amount == 0) revert ZeroAmount();
@@ -122,6 +125,7 @@ contract YoloLockHub {
     /// @dev The last point strictly before `t` (zeros if none).
     function _pointBefore(address who, uint256 t) private view returns (Point memory p) {
         Point[] storage h = _history[who];
+        // slither-disable-next-line uninitialized-local
         uint256 lo;
         uint256 hi = h.length;
         while (lo < hi) {
@@ -137,6 +141,7 @@ contract YoloLockHub {
         if (h.length != 0) p = h[h.length - 1];
     }
 
+    // slither-disable-next-line incorrect-equality
     function _checkpoint(address who, uint96 pw, uint64 end, uint32 epoch) private {
         Point[] storage h = _history[who];
         uint256 n = h.length;

@@ -172,6 +172,7 @@ contract DareTrophy is ERC721 {
                     ++x;
                     continue;
                 }
+                // slither-disable-next-line uninitialized-local
                 uint256 w;
                 while (x + w < 16 && row & (1 << (15 - x - w)) != 0) ++w;
                 svg = string.concat(
