@@ -72,8 +72,8 @@ library LaunchPlan {
     // afterwards as the market moves (at most x10 per call); they size only the stake bonus (the trophy has a
     // fixed 7,777 YOLO price).
     uint256 internal constant YOLO_PRICE_USD = 0.001e18;
-    uint256 internal constant ETH_USD_START = 2_300e18;
-    uint256 internal constant IMD_USD_START = 4.44e18;
+    uint256 internal constant ETH_USD_START = 2_400e18;
+    uint256 internal constant IMD_USD_START = 5.5e18;
     // $YOLO: 1B. Trading opens at openAt, fixed at deployment. Minutes 0-30 after it: the wallets of the
     // NFT gate's snapshot of identity.md NFT holders only (500,000 per NFT, no registration), minutes
     // 30-60 buy and sell tax 30% -> 0 to the project wallet, then a plain ERC-20 (YoloToken)
