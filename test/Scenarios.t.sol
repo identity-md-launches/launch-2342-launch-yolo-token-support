@@ -5,6 +5,7 @@ import "./Base.t.sol";
 
 /// @dev Fuzzed end-to-end cases. Whatever the path, after everyone claims: the vault holds exactly what it owes,
 ///      and owes nothing after the treasury is swept. IMD only left to the swarm payee and the burner.
+/// forge-config: default.isolate = false
 contract ScenariosTest is Base {
     bool internal callerSidesDoer;
 
@@ -81,7 +82,8 @@ contract ScenariosTest is Base {
     }
 
     function _run(Case memory c) internal returns (uint256 s) {
-        address cur = c.currency == 0 ? ETH : c.currency == 1 ? address(usdc) : c.currency == 2 ? address(imd) : address(yolo);
+        address cur =
+            c.currency == 0 ? ETH : c.currency == 1 ? address(usdc) : c.currency == 2 ? address(imd) : address(yolo);
         intake.setPrice(uint256(c.intakePriceCenti) * 1e16);
         vm.fee(uint256(c.basefeeGwei) * 1 gwei);
         callerSidesDoer = c.callerSidesDoer;
@@ -141,7 +143,9 @@ contract ScenariosTest is Base {
         uint256 fixedBps;
         if (c.lockWeeks != 0) {
             uint256 power = c.lockAmount * c.lockWeeks / 52;
-            address cur = c.currency == 0 ? ETH : c.currency == 1 ? address(usdc) : c.currency == 2 ? address(imd) : address(yolo);
+            address cur = c.currency == 0
+                ? ETH
+                : c.currency == 1 ? address(usdc) : c.currency == 2 ? address(imd) : address(yolo);
             uint256 rY = oracle.yoloValue(cur, sb.reward); // the whole pot at the submission
             fixedBps = rY == 0 ? 0 : power >= rY ? 400 : 400 * power / rY;
         }
@@ -173,15 +177,17 @@ contract ScenariosTest is Base {
                 // one disputer per submission, swarm callers one per round)
                 uint256 ceil = floor + (r / 100) * 3 * 2;
                 assertGe(vault.credits(cur, doer), floor, "doer credit below the no-penalty-share floor");
-                assertLe(vault.credits(cur, doer), ceil, "doer credit above the disputer bond plus three swarm callers' bonds, 2x margin");
+                assertLe(
+                    vault.credits(cur, doer),
+                    ceil,
+                    "doer credit above the disputer bond plus three swarm callers' bonds, 2x margin"
+                );
             } else {
                 // rejected: the doer never gets the reward or their bond back (forfeited), but every silent
                 // swarm call he made gives back the bond it posted (the fee stays paid) regardless of
                 // the final outcome (up to MAX_SWARM_CALLS = 3 of them, swarm/swarm2/swarm3), so his credit is
                 // not always exactly 0 - bounded generously by that many extra bonds (2x margin).
-                assertLe(
-                    vault.credits(cur, doer), (r / 100) * 3 * 2, "doer credit too high on a non-accepted outcome"
-                );
+                assertLe(vault.credits(cur, doer), (r / 100) * 3 * 2, "doer credit too high on a non-accepted outcome");
             }
         }
     }

@@ -6,6 +6,7 @@ import {ProtocolDirectory} from "../src/ProtocolDirectory.sol";
 
 /// @dev Versions side by side: version 1 from the constructor, later ones and the
 ///      current pointer only by the owner (the project wallet) after 48 h, nothing removed, old vaults keep working.
+/// forge-config: default.isolate = false
 contract DirectoryTest is Base {
     ProtocolDirectory internal dir;
     address internal safe = makeAddr("safe");

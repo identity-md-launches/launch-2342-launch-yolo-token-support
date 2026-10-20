@@ -198,7 +198,11 @@ contract ReviewLaunchStatic is Test {
         }
         console.log("YoloToken", token.code.length, "runtime, margin", EIP170 - token.code.length);
         if (EIP170 - token.code.length < supportMin) supportMin = EIP170 - token.code.length;
-        assertEq(supportMin, DOC_MARGIN_SUPPORT_MIN, "doc: launches 0 and 1 have >= DOC_MARGIN_SUPPORT_MIN bytes (ParamsRegistry)");
+        assertEq(
+            supportMin,
+            DOC_MARGIN_SUPPORT_MIN,
+            "doc: launches 0 and 1 have >= DOC_MARGIN_SUPPORT_MIN bytes (ParamsRegistry)"
+        );
         (bytes[] memory codes2, bytes32[] memory names2, address[] memory core) =
             LaunchPlan.core(f, 2, s, LaunchPlan.IMD, LaunchPlan.USDC, token);
         f.launchContracts(2, codes2);
@@ -219,7 +223,12 @@ contract ReviewLaunchStatic is Test {
             LaunchPlan.extras(f, 3, core[LaunchPlan.CORE_VAULT], OWNER, 1);
         f.launchContracts(3, codes3);
         for (uint256 i; i < 6; ++i) {
-            console.log(string(abi.encodePacked(names3[i])), extra[i].code.length, "runtime, margin", EIP170 - extra[i].code.length);
+            console.log(
+                string(abi.encodePacked(names3[i])),
+                extra[i].code.length,
+                "runtime, margin",
+                EIP170 - extra[i].code.length
+            );
             assertLt(codes3[i].length, EIP3860, "initcode limit");
         }
         assertEq(EIP170 - extra[0].code.length, DOC_MARGIN_SWEETENER, "doc: YoloSweetener margin");
@@ -297,7 +306,11 @@ contract ReviewLaunchStatic is Test {
         assertEq(type(SwarmQuestionBuilder).creationCode, plan[4], "SwarmQuestionBuilder");
         assertEq(_docCode(type(VotePower).creationCode, DOC1_VOTE_POWER), plan[5], "VotePower (nft, delegate.xyz)");
         assertEq(_docCode(type(AttestationChecker).creationCode, DOC1_ATTESTATION), plan[6], "AttestationChecker");
-        assertEq(_docCode(type(BuybackBurner).creationCode, DOC1_BURNER), plan[7], "BuybackBurner (5 args: yolo, imd, usdc, DevPrices, buyback wallet)");
+        assertEq(
+            _docCode(type(BuybackBurner).creationCode, DOC1_BURNER),
+            plan[7],
+            "BuybackBurner (5 args: yolo, imd, usdc, DevPrices, buyback wallet)"
+        );
     }
 
     /// Launch 2 of the doc (YoloLockHub, CaseDesk, DisputeDesk with the hub, TaskVault with `yolo` 4th and the burner
@@ -325,7 +338,9 @@ contract ReviewLaunchStatic is Test {
         assertEq(_docCode(type(YoloLockHub).creationCode, DOC2_HUB), plan[0], "YoloLockHub");
         assertEq(_docCode(type(CaseDesk).creationCode, DOC2_CASE), plan[1], "CaseDesk ($YOLO and the hub 6th, 7th)");
         assertEq(_docCode(type(DisputeDesk).creationCode, DOC2_DISPUTE), plan[2], "DisputeDesk (the hub 6th)");
-        assertEq(_docCode(type(TaskVault).creationCode, DOC2_VAULT), plan[3], "TaskVault (9 args, yolo 4th, burner 9th)");
+        assertEq(
+            _docCode(type(TaskVault).creationCode, DOC2_VAULT), plan[3], "TaskVault (9 args, yolo 4th, burner 9th)"
+        );
     }
 
     /// Launch 3 of the doc (YoloSweetener: the vault of launch 2; TrophyCatalog before the DareTrophy that reads it, so
@@ -356,13 +371,16 @@ contract ReviewLaunchStatic is Test {
             "ProtocolDirectory (owner, vault, modules, block of launch 2)"
         );
         assertEq(
-            _docCode(type(HiddenList).creationCode, DOC3_HIDDENLIST), plan[4], "HiddenList (owner, nft, delegateRegistry)"
+            _docCode(type(HiddenList).creationCode, DOC3_HIDDENLIST),
+            plan[4],
+            "HiddenList (owner, nft, delegateRegistry)"
         );
         assertEq(_docCode(type(YoloPredict).creationCode, DOC3_PREDICT), plan[5], "YoloPredict (vault, 1 YOLO)");
     }
 }
 
 /// @dev Runtime claims that need the full system (mocks).
+/// forge-config: default.isolate = false
 contract ReviewLaunchRuntime is Base {
     uint8 constant REJECT = 2;
 

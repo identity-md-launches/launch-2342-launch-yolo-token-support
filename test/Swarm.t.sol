@@ -5,6 +5,7 @@ import "./Base.t.sol";
 
 /// @dev Swarm answers (callback only, spoofing, late / duplicate answers); no mandatory check.
 ///      USDC task R = 100: the doer bond is 0.5 IMD + 3 USDC (3% of R).
+/// forge-config: default.isolate = false
 contract SwarmTest is Base {
     uint256 internal t;
     uint256 internal s;
@@ -258,7 +259,9 @@ contract SwarmTest is Base {
         vault.poke(tl);
         assertEq(uint8(_sub(sl).outcome), uint8(Outcome.Accepted));
         assertEq(
-            vault.credits(address(imd), doer2), 90e18 + 3e18 + _fixedBond(), "the reward minus 10%, the rew bond and the fixed IMD part"
+            vault.credits(address(imd), doer2),
+            90e18 + 3e18 + _fixedBond(),
+            "the reward minus 10%, the rew bond and the fixed IMD part"
         );
         assertEq(vault.treasuryPot(address(imd)), 10e18);
         assertEq(vault.getTask(tl).rejectedCount, 0);
@@ -393,7 +396,9 @@ contract SwarmTest is Base {
         assertEq(vault.credits(address(usdc), doer2), 900e6 + 30e6 + 5e6, "90% of R, the rew bond and half of erin's");
         assertEq(vault.getSettlement(sl).voterFee, 50e6);
         assertEq(vault.treasuryPot(address(usdc)), 50e6);
-        assertEq(vault.credits(address(imd), doer2), _fixedBond() + _fixedBond() / 2, "fixed bond back + half of erin's");
+        assertEq(
+            vault.credits(address(imd), doer2), _fixedBond() + _fixedBond() / 2, "fixed bond back + half of erin's"
+        );
         _claimEverythingAndCheck();
     }
 

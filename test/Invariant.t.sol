@@ -137,7 +137,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
             Task memory tk = vault.getTask(t);
             Contribution memory c1 = vault.getContribution(t, who);
             withdrawn[t] += uint256(c0.active) - c1.active;
-            // a completed task returns nothing: the whole pot went to the doer 
+            // a completed task returns nothing: the whole pot went to the doer
             if (tk.status == TaskStatus.Completed) earlyWithdrawals++;
             if (tk.status == TaskStatus.Open) earlyWithdrawals++;
             if (tk.status == TaskStatus.Expired && _now() < tk.deadline) earlyWithdrawals++;
@@ -153,7 +153,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         uint256 value;
         if (swapWithEth) {
             try vault.quoteSubmission(t) returns (Bond memory bond) {
-                uint256 needed = bond.imd; // only the fixed IMD part supports the ETH swap 
+                uint256 needed = bond.imd; // only the fixed IMD part supports the ETH swap
                 value = needed * 1e18 / 312.5e18 + 1e15;
                 pay = ImdPay({
                     tokenIn: ETH, amountIn: value, minImdOut: needed, deadline: uint64(_now() + 600), route: ""
@@ -203,7 +203,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         uint256 vi = voterSeed % 5;
         side = side % 2 == 0 ? 1 : 2;
         vm.fee(bound(basefee, 0, 100 gwei));
-        // anyone sends voter vi's NFT ids: only the holder's own vote passes, others revert 
+        // anyone sends voter vi's NFT ids: only the holder's own vote passes, others revert
         uint256[5] memory from = [uint256(0), 120, 140, 150, 155];
         uint256[5] memory cnt = [uint256(120), 20, 10, 5, 2];
         uint256[] memory ids = new uint256[](cnt[vi]);
@@ -486,6 +486,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
     receive() external payable {}
 }
 
+/// forge-config: default.isolate = false
 contract InvariantTest is Base {
     Handler internal handler;
 

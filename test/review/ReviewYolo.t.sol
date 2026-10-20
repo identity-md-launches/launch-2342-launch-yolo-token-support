@@ -68,6 +68,7 @@ contract ReviewYoloUnit is Test {
 }
 
 /// @dev With the vault (MockPriceOracle as DevPrices): what a depressed YOLO price does to the vault.
+/// forge-config: default.isolate = false
 contract ReviewYoloVault is Base {
     /// A YOLO price that exists (hasPrice) but is ~0 does not touch task creation at all (the minimum is in
     /// $YOLO itself, no USD limits, no price read). An existing task's bond is unaffected by the

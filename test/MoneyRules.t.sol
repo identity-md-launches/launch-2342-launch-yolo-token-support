@@ -18,6 +18,7 @@ import {rulesOf, rulesForehead, rulesSupermarket, TEST_RULE_PROOF, TEST_RULE_NO}
 /// @notice One test per protocol money rule: the $100 examples to the wei, the reward minimums, the lock of the
 ///         reward, the bonds, the swarm calls, the doer stake, the burn and the treasury. Prices of Base: IMD $8,
 ///         ETH $2500, USDC $1, YOLO $0.0001; swarm fee 0.5 IMD; every bond has a fixed 0.5 IMD part.
+/// forge-config: default.isolate = false
 contract MoneyRulesTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;
@@ -857,7 +858,12 @@ contract MoneyRulesTest is Base {
         TextRules text = new TextRules();
         address r = address(registry);
         CaseDesk cd = new CaseDesk(
-            r, address(imd), address(usdc), address(text), address(new SwarmQuestionBuilder()), address(yolo),
+            r,
+            address(imd),
+            address(usdc),
+            address(text),
+            address(new SwarmQuestionBuilder()),
+            address(yolo),
             address(0xBEEF)
         );
         DisputeDesk dd = new DisputeDesk(
@@ -866,15 +872,23 @@ contract MoneyRulesTest is Base {
         ITaskVault v = ITaskVault(
             address(
                 new TaskVault(
-                    r, address(imd), address(usdc), address(yolo), address(new AttestationChecker(r)), address(text),
-                    address(cd), address(dd), address(burner)
+                    r,
+                    address(imd),
+                    address(usdc),
+                    address(yolo),
+                    address(new AttestationChecker(r)),
+                    address(text),
+                    address(cd),
+                    address(dd),
+                    address(burner)
                 )
             )
         );
         vm.startPrank(author);
         usdc.approve(address(v), type(uint256).max);
-        uint256 t =
-            v.createTask(address(usdc), 100e6, uint64(_now() + 7 days), "T", rulesOf("ipfs://c"), 0, PROOF_LINK, "", _noSwap());
+        uint256 t = v.createTask(
+            address(usdc), 100e6, uint64(_now() + 7 days), "T", rulesOf("ipfs://c"), 0, PROOF_LINK, "", _noSwap()
+        );
         vm.stopPrank();
         vm.startPrank(doer);
         imd.approve(address(v), type(uint256).max);

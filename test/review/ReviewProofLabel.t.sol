@@ -7,6 +7,7 @@ import "../Base.t.sol";
 ///      the text `moneycanbuy.fun`, optional: it counts only when the task condition requires it. A proof handed in
 ///      first by somebody else is a matter for the dispute (NFT, swarm). Tests: the swarm question carries no doer
 ///      code, the same shape for every doer, and the prompt tells the panel the label is optional.
+/// forge-config: default.isolate = false
 contract ReviewProofLabel is Base {
     address internal honest = 0xabCDEf1111111111111111111111111111111111;
     address internal thief = 0xaBcdef2222222222222222222222222222222222;
@@ -95,8 +96,9 @@ contract ReviewProofLabel is Base {
     ///      was actually filed (the hash check is skipped with none), so passing DISPUTE_REASON/DISPUTER_PROOF
     ///      unconditionally is safe for both the undisputed and the disputed call sites below.
     function _question(uint256 subId) internal view returns (bytes memory q) {
-        (bytes memory body,) =
-            vault.previewSwarmBody(subId, 2, RuleTexts(COND, TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF));
+        (bytes memory body,) = vault.previewSwarmBody(
+            subId, 2, RuleTexts(COND, TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF)
+        );
         bytes memory head = '{"v":1,"question":"';
         uint256 i = head.length;
         while (body[i] != '"') ++i;

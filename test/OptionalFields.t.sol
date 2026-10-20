@@ -7,6 +7,7 @@ import "./Base.t.sol";
 ///      their own task like any doer.
 ///      Optional fields: the cover, the doer note, the screenshot link for onchain_tx and link, the
 ///      disputer's own link (DisputeLinkOptional.t.sol covers the swarm question).
+/// forge-config: default.isolate = false
 contract OptionalFieldsTest is Base {
     uint8 internal constant REJECT = 2;
     string internal constant SHOT = "https://i.imgur.com/screenshot.png";
@@ -16,7 +17,14 @@ contract OptionalFieldsTest is Base {
     function _createTyped(uint8 proofType, string memory cover) internal returns (uint256 id) {
         vm.prank(author);
         id = vault.createTask(
-            address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("ipfs://task-condition"), 0, proofType, cover,
+            address(usdc),
+            50e6,
+            uint64(_now() + TTL),
+            "Title",
+            rulesOf("ipfs://task-condition"),
+            0,
+            proofType,
+            cover,
             _noSwap()
         );
         trackedTasks.push(id);
@@ -38,8 +46,15 @@ contract OptionalFieldsTest is Base {
         vm.prank(author);
         vm.expectRevert(BadCover.selector);
         vault.createTask(
-            address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("ipfs://task-condition"), 0, PROOF_LINK,
-            "http://not-https.example/x.png", _noSwap()
+            address(usdc),
+            50e6,
+            uint64(_now() + TTL),
+            "Title",
+            rulesOf("ipfs://task-condition"),
+            0,
+            PROOF_LINK,
+            "http://not-https.example/x.png",
+            _noSwap()
         );
     }
 

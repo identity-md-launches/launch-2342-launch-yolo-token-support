@@ -7,6 +7,7 @@ import {IIntake} from "../../src/interfaces/IIntake.sol";
 /// @dev Core checks (TaskVault, VaultParams, VaultTypes, ParamsRegistry, ProtocolDirectory,
 /// OracleAttestation, AttestationChecker, interfaces): `test_Guard_*` guard the current rules against known attacks;
 /// `test_Guard_*` guard everything else checked here.
+/// forge-config: default.isolate = false
 contract AuditBTest is Base {
     // ================================================================== helpers
 
@@ -144,7 +145,7 @@ contract AuditBTest is Base {
         // author is the rejecter: excess ETH refund fails -> credited
         uint256 t = r.create{value: 0.1 ether}(0.05 ether);
         trackedTasks.push(t);
-        assertEq(vault.credits(ETH, address(r)), 0.1 ether - 0.05 ether); // no author fee 
+        assertEq(vault.credits(ETH, address(r)), 0.1 ether - 0.05 ether); // no author fee
         // the doer gets blocked by IMD (OFT `blocked`): his void bond is credited, not lost
         uint256 s1 = _submit(doer, t);
         uint256 s2 = _submit(doer2, t);
@@ -155,7 +156,7 @@ contract AuditBTest is Base {
         uint256 doer2EthBefore = doer2.balance;
         vault.claimVoidSubmission(s2);
         // the task's currency is ETH, so the bond's fixed IMD part is pushed (and credited, IMD-blocked) while its
-        // percent (rew) part in ETH is pushed straight to doer2's wallet balance (he is not ETH-blocked 
+        // percent (rew) part in ETH is pushed straight to doer2's wallet balance (he is not ETH-blocked
         // bond.rew is always in the reward's own currency, not necessarily IMD).
         Bond memory voidBond = _sub(s2).bond;
         assertEq(vault.credits(address(imd), doer2), voidBond.imd);
@@ -192,7 +193,15 @@ contract AuditBTest is Base {
         uint256 ethBefore = author.balance;
         vm.prank(author);
         uint256 t = vault.createTask{value: value}(
-            address(imd), amount, uint64(_now() + TTL), "Title", rulesOf("ipfs://task-condition"), 0, PROOF_LINK, "", pay
+            address(imd),
+            amount,
+            uint64(_now() + TTL),
+            "Title",
+            rulesOf("ipfs://task-condition"),
+            0,
+            PROOF_LINK,
+            "",
+            pay
         );
         trackedTasks.push(t);
         uint256 got = usdcIn ? pay.amountIn * 0.125e30 / 1e18 : pay.amountIn * 312.5e18 / 1e18;

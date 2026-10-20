@@ -41,9 +41,7 @@ contract Reenterer {
         taskId = t;
         armed = true;
         ImdPay memory none;
-        s = v.submit{value: msg.value}(
-            t, "https://x.com/doer/status/1", Evidence("", ""), 0, type(uint256).max, none
-        );
+        s = v.submit{value: msg.value}(t, "https://x.com/doer/status/1", Evidence("", ""), 0, type(uint256).max, none);
         armed = false;
     }
 
@@ -118,6 +116,7 @@ contract HookAdapter {
     }
 }
 
+/// forge-config: default.isolate = false
 contract ReviewSplitAccess is Base {
     address internal stranger = makeAddr("stranger");
 
@@ -185,7 +184,13 @@ contract ReviewSplitAccess is Base {
         TextRules text = new TextRules();
         address r = address(registry);
         CaseDesk cd = new CaseDesk(
-            r, address(imd), address(usdc), address(text), address(new SwarmQuestionBuilder()), address(yolo), address(hub)
+            r,
+            address(imd),
+            address(usdc),
+            address(text),
+            address(new SwarmQuestionBuilder()),
+            address(yolo),
+            address(hub)
         );
         DisputeDesk dd = new DisputeDesk(
             r, address(imd), address(usdc), address(text), address(votePower), address(yolo), address(hub)
@@ -295,8 +300,8 @@ contract ReviewSplitAccess is Base {
         _dispute(dave, s);
 
         vm.startPrank(stranger);
-        (bool ok, bytes memory ret) = address(caseDesk)
-            .call(bytes.concat(abi.encodeCall(CaseDesk.claimVoidSubmission, (s)), _sfx(doer, 0)));
+        (bool ok, bytes memory ret) =
+            address(caseDesk).call(bytes.concat(abi.encodeCall(CaseDesk.claimVoidSubmission, (s)), _sfx(doer, 0)));
         assertFalse(ok);
         assertEq(_errOf(ret), NotAuthorized.selector);
         // spend alice's approval to the vault as if she submitted
@@ -318,7 +323,9 @@ contract ReviewSplitAccess is Base {
         assertFalse(ok);
         assertEq(_errOf(ret), NotAuthorized.selector);
         (ok, ret) = address(disputeDesk)
-            .call(bytes.concat(abi.encodeCall(DisputeDesk.dispute, (s, "r", "rp", _noSwap())), _sfx(stranger, 10 ether)));
+            .call(
+                bytes.concat(abi.encodeCall(DisputeDesk.dispute, (s, "r", "rp", _noSwap())), _sfx(stranger, 10 ether))
+            );
         assertFalse(ok);
         assertEq(_errOf(ret), NotAuthorized.selector);
         vm.stopPrank();
@@ -364,7 +371,8 @@ contract ReviewSplitAccess is Base {
         vm.stopPrank();
         // the case desk as caller
         vm.startPrank(address(caseDesk));
-        (ok, ret) = address(disputeDesk).call(bytes.concat(abi.encodeCall(DisputeDesk.dispute, (1, "r", "rp", _noSwap())), sfx));
+        (ok, ret) = address(disputeDesk)
+            .call(bytes.concat(abi.encodeCall(DisputeDesk.dispute, (1, "r", "rp", _noSwap())), sfx));
         assertFalse(ok);
         assertEq(_errOf(ret), NotAuthorized.selector);
         (ok, ret) = address(disputeDesk).call(bytes.concat(abi.encodeCall(DisputeDesk.claimDisputer, (1)), sfx));

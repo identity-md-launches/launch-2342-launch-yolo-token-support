@@ -7,6 +7,7 @@ import "./Base.t.sol";
 ///      "Burn" and goes to 0x...dEaD; ETH, USDC, IMD wait for anyone's "Send" (`forward`) and go to the buyback wallet,
 ///      a dev parameter. Every outcome for R = $100: where the burn share ends up after `forward`.
 ///      Dollar amounts below follow Base's configured token prices (see Base.t.sol).
+/// forge-config: default.isolate = false
 contract BuybackWalletTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

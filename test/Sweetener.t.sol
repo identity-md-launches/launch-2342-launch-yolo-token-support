@@ -10,6 +10,7 @@ import "./Base.t.sol";
 ///      `Settlement.stakeBps`) and who
 ///      never sweetened the task gets that share of it more. Locked like
 ///      the reward until the deadline; back to each sweetener after an expiry or an unwind. No cap, no notice.
+/// forge-config: default.isolate = false
 contract SweetenerTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;
@@ -42,7 +43,11 @@ contract SweetenerTest is Base {
         vm.prank(erin); // anyone may trigger the payout
         sweetener.payout(t);
         assertEq(yolo.balanceOf(doer) - doerBefore, 1_350_000e18, "90% to the doer");
-        assertEq(yolo.balanceOf(address(burner)) - dead0, 150_000e18, "the 10% fee burned: the treasury's $YOLO, no NFT decision");
+        assertEq(
+            yolo.balanceOf(address(burner)) - dead0,
+            150_000e18,
+            "the 10% fee burned: the treasury's $YOLO, no NFT decision"
+        );
         assertEq(yolo.balanceOf(treasury), 0, "the treasury never gets $YOLO");
         assertEq(sweetener.bonusOf(t), 0);
         assertEq(yolo.balanceOf(address(sweetener)), 0);
