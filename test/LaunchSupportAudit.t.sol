@@ -8,6 +8,7 @@ import {NftGate} from "../src/token/NftGate.sol";
 import {BuybackBurner} from "../src/BuybackBurner.sol";
 import {DevPrices} from "../src/DevPrices.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {YoloSplitter} from "../src/token/YoloSplitter.sol";
 
 /// @dev The launch's fixed values, as the brief gives them.
 abstract contract LaunchValues {
@@ -829,5 +830,100 @@ contract LaunchSupportGateInvariantTest is Test, LaunchValues {
         assertEq(y.balanceOf(PROJECT), 0);
         assertEq(y.balanceOf(h.pm()), 150_000_000e18 - total);
         assertEq(y.totalSupply(), SUPPLY);
+    }
+}
+
+/// @dev Drives the YoloSplitter (the launch's remainderTo, which holds 75% of the supply until split) with random
+///      deposits and split calls, on two tokens, the five recipients plain wallets as in a bare test chain.
+contract SplitterHandler is Test {
+    YoloSplitter public splitter;
+    MockERC20[2] public tokens;
+    address[5] public to;
+    mapping(address => uint256) public ghostIn;
+    mapping(address => bool) public ghostSplit;
+    mapping(address => uint256) public ghostSplitBalance;
+    uint256 public ghostSplitCalls;
+
+    constructor() {
+        for (uint256 i; i < 5; ++i) {
+            to[i] = address(uint160(0xA11CE0 + i));
+        }
+        splitter = new YoloSplitter(to[0], to[1], to[2], to[3], to[4]);
+        tokens[0] = new MockERC20("A", "A", 18);
+        tokens[1] = new MockERC20("B", "B", 18);
+    }
+
+    function deposit(uint256 which, uint256 amount) external {
+        MockERC20 t = tokens[which % 2];
+        // around the threshold: below it, exactly at it, and the launch's 750M
+        amount = bound(amount, 0, 800_000_000e18);
+        t.mint(address(splitter), amount);
+        ghostIn[address(t)] += amount;
+    }
+
+    function split(uint256 which) external {
+        MockERC20 t = tokens[which % 2];
+        uint256 bal = t.balanceOf(address(splitter));
+        bool wasDone = splitter.done(address(t));
+        if (!wasDone && bal <= splitter.FIXED()) {
+            vm.expectRevert(abi.encodeWithSelector(YoloSplitter.NotArrived.selector, bal));
+            splitter.split(address(t));
+            return;
+        }
+        splitter.split(address(t));
+        ++ghostSplitCalls;
+        if (!wasDone) {
+            ghostSplit[address(t)] = true;
+            ghostSplitBalance[address(t)] = bal;
+        }
+        assertEq(t.balanceOf(address(splitter)), 0);
+    }
+
+    function tokenAt(uint256 i) external view returns (MockERC20) {
+        return tokens[i];
+    }
+
+    function recipient(uint256 i) external view returns (address) {
+        return to[i];
+    }
+}
+
+/// @notice Invariants of the splitter over random sequences: it pays only its five recipients, the four fixed shares
+///         exactly once per token, everything else to the treasury vesting, and never keeps tokens after a split.
+contract LaunchSupportSplitterInvariantTest is Test {
+    SplitterHandler internal h;
+
+    function setUp() public {
+        h = new SplitterHandler();
+        targetContract(address(h));
+    }
+
+    /// forge-config: default.invariant.runs = 64
+    /// forge-config: default.invariant.depth = 40
+    function invariant_SplitterConservation_FixedSharesOnce_RestToTreasury() public view {
+        YoloSplitter s = h.splitter();
+        for (uint256 k; k < 2; ++k) {
+            MockERC20 t = h.tokenAt(k);
+            uint256 paid;
+            for (uint256 i; i < 5; ++i) {
+                paid += t.balanceOf(h.recipient(i));
+            }
+            // nothing created, nothing lost, nothing paid outside the five recipients
+            assertEq(t.balanceOf(address(s)) + paid, h.ghostIn(address(t)));
+            assertEq(t.totalSupply(), h.ghostIn(address(t)));
+            // done flips once and never reopens; it matches what the handler saw
+            assertEq(s.done(address(t)), h.ghostSplit(address(t)));
+            if (!s.done(address(t))) {
+                assertEq(paid, 0);
+                continue;
+            }
+            assertGt(h.ghostSplitBalance(address(t)), s.FIXED());
+            assertEq(t.balanceOf(s.incentivesVesting()), s.INCENTIVES());
+            assertEq(t.balanceOf(s.devVesting()), s.DEV());
+            assertEq(t.balanceOf(s.teamVesting()), s.TEAM());
+            assertEq(t.balanceOf(s.stabilizer()), s.STABILIZER());
+            // the treasury vesting holds everything else that has left the splitter
+            assertEq(t.balanceOf(s.treasuryVesting()), h.ghostIn(address(t)) - t.balanceOf(address(s)) - s.FIXED());
+        }
     }
 }
