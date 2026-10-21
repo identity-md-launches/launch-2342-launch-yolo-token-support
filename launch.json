@@ -1,0 +1,93 @@
+{
+  "kind": "custom_token",
+  "token": {
+    "contract": "YoloToken",
+    "name": "YOLO",
+    "symbol": "YOLO",
+    "decimals": 18,
+    "constructorArgs": [
+      "$poolManager",
+      "0x97c8fe82527f1a65a147bb0b425c717e4ec547c2",
+      "0x3c587eff6c96eacf7e3dcc2cff6416161386e48c",
+      "1792584000"
+    ],
+    "totalSupply": "1000000000000000000000000000"
+  },
+  "contracts": [
+    {
+      "contract": "DevPrices",
+      "constructorArgs": [
+        "0x8ad18e99f4c8d8406f9ba8899cf308000518a981",
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+        "$token",
+        "1000000000000000",
+        "2400000000000000000000",
+        "5500000000000000000"
+      ]
+    },
+    {
+      "contract": "UniswapV3SwapAdapter",
+      "constructorArgs": [
+        "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ]
+    },
+    {
+      "contract": "ParamsRegistry",
+      "constructorArgs": [
+        "0x3c587eff6c96eacf7e3dcc2cff6416161386e48c",
+        "0xa43e6f75ee006411f79ac1c84120606c2330de82",
+        "$contract:DevPrices",
+        "$contract:UniswapV3SwapAdapter",
+        "0x0000ec93127baa929e58e97dd0095a2bfb38ec1d",
+        "0x00000000000000447e69651d841bd8d104bed493",
+        "0x3c587eff6c96eacf7e3dcc2cff6416161386e48c",
+        "0x5598aa9146215bc13eb26f2c692ad1461fd32982"
+      ]
+    },
+    {
+      "contract": "TextRules",
+      "constructorArgs": []
+    },
+    {
+      "contract": "SwarmQuestionBuilder",
+      "constructorArgs": []
+    },
+    {
+      "contract": "VotePower",
+      "constructorArgs": [
+        "0x0000ec93127baa929e58e97dd0095a2bfb38ec1d",
+        "0x00000000000000447e69651d841bd8d104bed493"
+      ]
+    },
+    {
+      "contract": "AttestationChecker",
+      "constructorArgs": [
+        "$contract:ParamsRegistry"
+      ]
+    },
+    {
+      "contract": "BuybackBurner",
+      "constructorArgs": [
+        "$token",
+        "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "$contract:DevPrices",
+        "0x027e55f01e8cf808e5d2a2ad68e5e7f67fd6df6e"
+      ]
+    }
+  ],
+  "pool": {
+    "pairedCurrency": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+    "fee": 12500,
+    "tickSpacing": 60,
+    "initialPrice": "79228162514264337593543950336"
+  },
+  "economics": {
+    "poolBps": 1500,
+    "initialMarketCapWei": "15000000000000000000000",
+    "remainderTo": "0xf165884070b1a1e571f4a3b50fd727fe8380bee4"
+  },
+  "notes": "$YOLO of moneycanbuy.fun, the second of four launches (support), paired with IMD on Ethereum mainnet; script/LaunchPlan.sol is the plan in code. YoloToken (src/token/YoloToken.sol): name YOLO, symbol YOLO, 18 decimals, 1,000,000,000 YOLO minted once to msg.sender, the factory; no owner, no mint, burn or pause, no editable list. Constructor: the Uniswap v4 PoolManager ($poolManager), the NftGate of launch #2292 (0x97c8fe82527f1a65a147bb0b425c717e4ec547c2), the project wallet that receives the tax (0x3c587eff6c96eacf7e3dcc2cff6416161386e48c), and openAt 1792584000 (21 Oct 2026 12:00 UTC; the constructor requires deployment <= openAt <= deployment + 30 days, else BadOpenAt). A buy is a transfer out of the PoolManager, a sell a transfer into it; the factory (seeding, claimFees, the swarm's share) and the PoolManager are exempt, and wallet transfers are never taxed. Before openAt every buy reverts TradingNotOpen(openAt) while seeding and sells pass untaxed. Minutes 0-30 after openAt: only wallets in the gate's sealed snapshot may buy (SnapshotNotSealed unless sealedAt() < openAt; consume(buyer, amount) enforces 500,000 YOLO per NFT; no code at the gate means no whitelist), buys untaxed, every sell pays 30% in YOLO to the project wallet. Minutes 30-60: anyone trades, the tax on both sides falls linearly from 30% to 0 (amount x 3000 x (3600 - elapsed) / 18,000,000, rounded down); a buy tax is taken from what the pool sends, a sell tax comes on top from the seller so the pool receives exactly the settled amount. From minute 60 a plain ERC-20 for good. Accepted limits: ERC-6909 claims kept in the PoolManager skip openAt, the gate and the tax until taken out; wallet liquidity added after openAt pays the sell tax; pools outside Uniswap v4 are untaxed; in minutes 0-30 routes paying a router first are refused (Universal Router TAKE_ALL passes). Economics: 15% of the supply seeds the YOLO/IMD pool at a 15,000 IMD opening cap, the remainder goes to the YoloSplitter of launch #2292 (economics.remainderTo), which hands the project's share to the vestings and the stabilizer wallet; the swarm's 10% is the factory's. Support contracts, none holds user funds and every constructor takes only addresses and integers: DevPrices (owner the dev wallet 0x8ad18e99f4c8d8406f9ba8899cf308000518a981) holds the hand-set USD prices of YOLO (start 0.001), ETH (start 2,400) and IMD (start 5.5), USDC fixed at 1; zero refused, at most 10x per call; prices only size the doer stake bonus, and its owner alone may cancel a task (refunds only) and set the buyback wallet. UniswapV3SwapAdapter swaps ETH or USDC to IMD through SwapRouter02 for bonds paid in another currency. ParamsRegistry (owner the project wallet) holds version 1 parameters and the swarm answer signers, changed only behind a 48-hour timelock inside compiled bounds, and can pause new tasks; it never moves or freezes money. TextRules, SwarmQuestionBuilder and AttestationChecker are stateless helpers. VotePower says who may vote with an identity.md NFT now (owner or delegate.xyz v2 delegate), no state or owner. BuybackBurner swaps nothing: anyone may burnYolo() what sits there to 0x...dEaD and forward ETH, USDC and IMD to the buyback wallet, which starts at 0x027e55f01e8cf808e5d2a2ad68e5e7f67fd6df6e. The core launch (YoloLockHub, CaseDesk, DisputeDesk, TaskVault) follows as an evm_contracts launch taking this launch's token and contract addresses as static arguments, then the $YOLO modules. pool.initialPrice is provenance only: the deployer derives the opening price from economics.initialMarketCapWei and the supply."
+}
