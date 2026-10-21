@@ -7,6 +7,7 @@ import "../../src/VaultTypes.sol";
 /// @dev Finding (swarm money audit, medium): a doer with a running lock whose bonus floors to 0 bps was settled
 ///      by the no-stake split (treasury 10%). Rule: any power is a stake, no threshold; the stakers'
 ///      5% minus b goes half to the burn, half to the treasury, and the NFT 5% nobody earned is burned.
+/// forge-config: default.isolate = false
 contract StakeFloorZeroSplitTest is Base {
     /// @dev $100 USDC at YOLO $0.0001 = 1M $YOLO; 1 bp needs power >= 2,500 YOLO. 2,000 for a year: b = 0.8 -> 0 bps.
     function test_StakeFlooredToZero_UsesStakedSplit() public {

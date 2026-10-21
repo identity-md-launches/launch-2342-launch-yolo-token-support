@@ -10,6 +10,7 @@ import "./Base.t.sol";
 ///             author's own reward; a decided task takes no top-up.
 ///         (3) the stake power is measured against the task's whole reward at the submission (the pot with
 ///             every top-up) plus its $YOLO add-on; the bonus share is paid on the whole reward and on the add-on. Base prices: $YOLO at $0.0001, $100 = 1M $YOLO.
+/// forge-config: default.isolate = false
 contract ContractRulesTest is Base {
     uint8 internal constant REJECT = 2;
 

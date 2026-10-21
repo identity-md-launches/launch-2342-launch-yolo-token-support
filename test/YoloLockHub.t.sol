@@ -13,6 +13,7 @@ import "./Base.t.sol";
 /// whole pot at the submission, converted at the DevPrices $YOLO price, plus the $YOLO add-on; any power counts, no threshold. The DisputeDesk pays it if
 /// the same lock still runs (`stakePower(who, since)`); the rest of the stakers' 5% splits half to the burn
 /// (rounded down), half to the treasury. Base prices $YOLO at $0.0001: a $100 reward = 1M $YOLO.
+/// forge-config: default.isolate = false
 contract YoloLockHubTest is Base {
     uint256 internal constant WEEK = 7 days;
     uint256 internal constant FULL = 1_000_000e18; // the power of $100 at $0.0001: the whole 4% on a $100 reward
@@ -322,7 +323,11 @@ contract YoloLockHubTest is Base {
         _warp(1);
         uint256 s2 = _acceptQuietly(t2);
         assertEq(vault.getSettlement(s2).stakeBps, 80, "2M on $1,000 (10M YOLO): 20% of it, 0.8%");
-        assertEq(vault.credits(address(usdc), doer), 94e6 + 3e6 + 908e6 + 30e6, "both tasks' reward share plus their rew bonds");
+        assertEq(
+            vault.credits(address(usdc), doer),
+            94e6 + 3e6 + 908e6 + 30e6,
+            "both tasks' reward share plus their rew bonds"
+        );
         _lock(doer2, 250_000e18, 13);
         uint256 t3 = _usdcTask();
         uint256 s3 = _submit(doer2, t3);
@@ -406,7 +411,9 @@ contract YoloLockHubTest is Base {
         _lock(doer, 0, 52); // the same 10M locked again for a year: the whole 4%
         uint256 s2 = _acceptQuietly(_usdcTask());
         assertEq(vault.getSettlement(s2).stakeBps, 400);
-        assertEq(vault.credits(address(usdc), doer), 90e6 + 3e6 + 94e6 + 3e6, "both tasks' 90%(+stake) plus their rew bonds");
+        assertEq(
+            vault.credits(address(usdc), doer), 90e6 + 3e6 + 94e6 + 3e6, "both tasks' 90%(+stake) plus their rew bonds"
+        );
         _claimEverythingAndCheck();
     }
 

@@ -23,6 +23,7 @@ contract DustToken is ERC20 {
 ///         starts the clock at the first call that finds ANY balance, by anyone. Between the token launch and the split
 ///         anybody can send 1 wei of YOLO to a vesting and call release: the clock then runs before the share arrives,
 ///         and the share vests pro rata to that head start the moment the split pays it.
+/// forge-config: default.isolate = false
 contract VestingClockPreStartTest is Test {
     DustToken yolo;
     DevVesting dev;
@@ -58,6 +59,7 @@ contract VestingClockPreStartTest is Test {
 }
 
 /// @dev The fix: the splitter binds itself as the only starter in the launch transaction; nobody binds later.
+/// forge-config: default.isolate = false
 contract VestingStarterBindingTest is Test {
     DevVesting lone; // deployed in setUp, a transaction before every test
 
@@ -67,7 +69,8 @@ contract VestingStarterBindingTest is Test {
 
     function test_starterIsTheSplitterAndCannotBeRebound() public {
         DevVesting dev = new DevVesting(address(0xBEEF));
-        YoloSplitter splitter = new YoloSplitter(address(0xA1), address(dev), address(0xA3), address(0xA4), address(0xA5));
+        YoloSplitter splitter =
+            new YoloSplitter(address(0xA1), address(dev), address(0xA3), address(0xA4), address(0xA5));
         assertEq(dev.starter(), address(splitter));
         vm.expectRevert(ProjectVesting.BindingClosed.selector);
         dev.bindStarter(); // already bound, even inside the same transaction

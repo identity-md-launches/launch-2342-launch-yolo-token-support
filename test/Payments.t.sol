@@ -70,6 +70,7 @@ contract ReentrantDisputer {
 }
 
 /// @dev Payment mode A (swap adapter), refunds, credits, blocked receivers, treasury sweep.
+/// forge-config: default.isolate = false
 contract PaymentsTest is Base {
     function test_ModeA_SubmitWithEth_SurplusAndExcessRefunded() public {
         uint256 t = _create(author, address(usdc), 100e6);
@@ -110,7 +111,7 @@ contract PaymentsTest is Base {
         vm.prank(dave);
         vault.dispute(s, "r", "rp", pay);
         // the swap (mode A) pays only the bond's fixed IMD part; its percent part (1% of 100 USDC = 1 USDC) is
-        // collected separately, in USDC, no swap 
+        // collected separately, in USDC, no swap
         assertEq(usdcBefore - usdc.balanceOf(dave), 10e6 + 1e6);
         assertEq(imd.balanceOf(dave), 10_000e18 + 0.75e18); // 1.25 IMD in, bond's fixed part 0.5: surplus 0.75
         assertEq(usdc.allowance(address(vault), address(adapter)), 0);
@@ -126,10 +127,9 @@ contract PaymentsTest is Base {
             route: ""
         });
         vm.prank(author);
-        uint256 t =
-            vault.createTask{value: 0.021 ether}(
-                address(imd), 5e18, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", pay
-            );
+        uint256 t = vault.createTask{value: 0.021 ether}(
+            address(imd), 5e18, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", pay
+        );
         trackedTasks.push(t);
         assertEq(vault.getTask(t).pot, 5e18);
         assertEq(imd.balanceOf(author), 10_000e18 + 1.25e18);
@@ -238,7 +238,7 @@ contract PaymentsTest is Base {
         vault.sweepTreasury(address(imd));
         assertEq(vault.treasuryPot(address(imd)), 0); // nothing kept back: the treasury pays for nothing
         assertEq(vault.credits(address(imd), treasury), 10e18);
-        assertEq(vault.treasuryPot(ETH), 0); // no author fee 
+        assertEq(vault.treasuryPot(ETH), 0); // no author fee
         _claimEverythingAndCheck();
     }
 
@@ -249,7 +249,7 @@ contract PaymentsTest is Base {
         _warp(24 hours);
         ImdPay memory pay = ImdPay({
             tokenIn: ETH,
-            amountIn: 0.005 ether, // $12.5 at $2500/ETH = 1.5625 IMD at $8/IMD, for bond 0.5 + fee 0.5 
+            amountIn: 0.005 ether, // $12.5 at $2500/ETH = 1.5625 IMD at $8/IMD, for bond 0.5 + fee 0.5
             minImdOut: 1.5e18,
             deadline: uint64(_now() + 600),
             route: ""
@@ -288,8 +288,8 @@ contract PaymentsTest is Base {
     function test_TopUpHasNoFee() public {
         uint256 t = _create(author, address(usdc), 100e6);
         vm.prank(alice);
-        vault.topUp(t, 10e6, _noSwap()); // no ETH needed: contributors pay no fee 
-        assertEq(vault.treasuryPot(ETH), 0); // no author fee either 
+        vault.topUp(t, 10e6, _noSwap()); // no ETH needed: contributors pay no fee
+        assertEq(vault.treasuryPot(ETH), 0); // no author fee either
         _claimEverythingAndCheck();
     }
 }

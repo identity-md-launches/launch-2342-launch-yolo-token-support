@@ -10,6 +10,7 @@ import {SwarmQuestion} from "../src/helpers/SwarmQuestion.sol";
 ///      mandatory for x_post/x_reply/video, optional otherwise) + optional doer note: stored, emitted, sent to the swarm, and the
 ///      worst question still fits. Base._create's generic task uses PROOF_LINK (evidence-optional) so unrelated
 ///      tests are unaffected; this file's own tasks pick the proof type each test needs (`_createType`).
+/// forge-config: default.isolate = false
 contract EvidenceTest is Base {
     string internal constant SHOT = "https://i.imgur.com/screenshot.png";
     string internal constant SHOT2 = "https://pbs.twimg.com/media/abc123.jpg";
@@ -211,7 +212,15 @@ contract EvidenceTest is Base {
     function _createType(uint8 proofType) internal returns (uint256 id) {
         vm.prank(author);
         id = vault.createTask(
-            address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("ipfs://task-condition"), 0, proofType, "", _noSwap()
+            address(usdc),
+            50e6,
+            uint64(_now() + TTL),
+            "Title",
+            rulesOf("ipfs://task-condition"),
+            0,
+            proofType,
+            "",
+            _noSwap()
         );
         trackedTasks.push(id);
     }

@@ -5,6 +5,7 @@ import "./Base.t.sol";
 
 /// @dev Every step is closed by its own timer, any caller can trigger the close, and the result is final:
 ///      there is no separate "stuck" fallback (the dev wallet's cancelTask is covered in CancelTask.t.sol).
+/// forge-config: default.isolate = false
 contract EmergencyTest is Base {
     /// @dev the fixed IMD part of every bond: never doubled, same for the doer and dispute bond.
     uint256 internal constant F = 0.5e18;

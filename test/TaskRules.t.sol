@@ -6,6 +6,7 @@ import {ParamsBounds, LaunchParams} from "../src/VaultParams.sol";
 
 /// @dev Task rules in three fields: TASK, PROOF (WINDOW + WHO + PROOF + SOURCE) and NO, each
 ///      1..maxTextBytes, each its own swarm definition. Runs under the launch value maxTextBytes = 512.
+/// forge-config: default.isolate = false
 contract TaskRulesTest is Base {
     function setUp() public override {
         super.setUp();
@@ -161,8 +162,7 @@ contract TaskRulesTest is Base {
 
     function _gas(string memory name, TaskRules memory r, uint8 proofType) internal {
         bytes memory data = abi.encodeCall(
-            ITaskVault.createTask,
-            (address(usdc), 50e6, uint64(_now() + TTL), "Title", r, 0, proofType, "", _noSwap())
+            ITaskVault.createTask, (address(usdc), 50e6, uint64(_now() + TTL), "Title", r, 0, proofType, "", _noSwap())
         );
         uint256 cd;
         for (uint256 i; i < data.length; ++i) {

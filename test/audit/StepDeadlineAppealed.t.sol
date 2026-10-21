@@ -6,6 +6,7 @@ import "../../src/VaultTypes.sol";
 
 /// @dev Finding (swarm logic audit, low): stepDeadline returned appealedAt in Phase.Appealed, a moment already
 ///      past. The real timer is the void at appealedAt + swarmTimeout (6 h): an appeal not asked by then is void.
+/// forge-config: default.isolate = false
 contract StepDeadlineAppealedTest is Base {
     function test_StepDeadlineAppealed_IsVoidMoment() public {
         uint256 t = _create(author, address(usdc), 100e6);

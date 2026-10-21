@@ -9,6 +9,7 @@ import "./Base.t.sol";
 ///      Every voter pays their own gas.
 ///      Base setUp: voter0..4 hold 120 / 20 / 10 / 5 / 2 NFTs (ids 0..156).
 ///      USDC task R = 100: the doer and dispute bonds are 0.5 IMD fixed (`B`) + 3%/1% of R in USDC.
+/// forge-config: default.isolate = false
 contract VotesTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

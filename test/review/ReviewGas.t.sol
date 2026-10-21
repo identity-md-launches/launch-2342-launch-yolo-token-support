@@ -6,6 +6,7 @@ import {Base} from "../Base.t.sol";
 import "../../src/VaultTypes.sol";
 
 /// @dev Gas of the heaviest lazy step: one disputer with a 256-byte reason and proof, the longest doer note.
+/// forge-config: default.isolate = false
 contract ReviewGas is Base {
     uint8 constant REJECT = 2;
 
@@ -42,9 +43,7 @@ contract ReviewGas is Base {
     function _fullCase() internal returns (uint256 t, uint256 s) {
         t = _create(author, address(usdc), 100e6);
         vm.prank(doer);
-        s = vault.submit(
-            t, _longProof(), Evidence("", _longNote("d")), 0, type(uint256).max, _noSwap()
-        );
+        s = vault.submit(t, _longProof(), Evidence("", _longNote("d")), 0, type(uint256).max, _noSwap());
         address d = address(uint160(0xD15000));
         _fund(d); // the dispute bond's rew part is in the task's own currency (USDC here), not IMD
         vm.prank(d);

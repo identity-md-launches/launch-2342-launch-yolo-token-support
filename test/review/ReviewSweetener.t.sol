@@ -13,6 +13,7 @@ import {rulesOf, rulesForehead, rulesSupermarket, TEST_RULE_PROOF, TEST_RULE_NO}
 
 /// @dev "Sweeten and the YOLO price" (YoloSweetener).
 /// `test_Guard_*` hold what was checked and found sound.
+/// forge-config: default.isolate = false
 contract ReviewSweetenerTest is Base {
     uint8 internal constant REJECT = 2;
 
@@ -169,8 +170,12 @@ contract ReviewSweetenerTest is Base {
         yolo.mint(address(bad), 1_000e18);
         bad.prepare(address(imd), address(yolo));
         bad.sweetenAndSubmit{value: 1 ether}(1_000e18); // all of the ETH comes back: refunded by a push
-        assertEq(bad.withdrawError(), TaskVault.ReentrancyGuardReentrantCall.selector, "withdraw inside the refund: locked");
-        assertEq(bad.payoutError(), TaskVault.ReentrancyGuardReentrantCall.selector, "payout inside the refund: refused");
+        assertEq(
+            bad.withdrawError(), TaskVault.ReentrancyGuardReentrantCall.selector, "withdraw inside the refund: locked"
+        );
+        assertEq(
+            bad.payoutError(), TaskVault.ReentrancyGuardReentrantCall.selector, "payout inside the refund: refused"
+        );
         assertEq(sweetener.bonusOf(t), 1_000e18);
         assertEq(yolo.balanceOf(address(sweetener)), 1_000e18);
 
@@ -266,6 +271,7 @@ contract ReentrantDoer {
 /// @dev What the vault does with every state of the YOLO price (MockPriceOracle as DevPrices).
 /// There is no oracle: DevPrices is a dev parameter, not a sampled TWAP, so there is no sample window or floor
 /// to attack, and the bond never reads a price at all.
+/// forge-config: default.isolate = false
 contract ReviewYoloStrictTest is Base {
     /// The bond needs no oracle at all, so a vanished (or never set) $YOLO price
     /// cannot surprise the doer; his quote holds whatever DevPrices does meanwhile.

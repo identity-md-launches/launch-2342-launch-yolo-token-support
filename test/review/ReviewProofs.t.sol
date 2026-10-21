@@ -11,6 +11,7 @@ import "../../src/VaultTypes.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 
 /// @dev Attack scenarios, each checked to fail against the contracts.
+/// forge-config: default.isolate = false
 contract ReviewProofs is Base {
     uint8 constant ACCEPT = 1;
     uint8 constant REJECT = 2;

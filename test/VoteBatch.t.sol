@@ -5,6 +5,7 @@ import "./Base.t.sol";
 
 /// @dev claimVoterRewards: the voter rewards of one payTo on many submissions in one transaction pay
 ///      exactly what the single claims would, $YOLO bonus shares included; nothing claimable is skipped.
+/// forge-config: default.isolate = false
 contract VoteBatchTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

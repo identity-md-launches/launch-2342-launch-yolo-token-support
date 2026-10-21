@@ -7,6 +7,7 @@ import "../../src/VaultTypes.sol";
 /// @dev The submission queue + top-ups during review + withdrawing shares + the task deadline.
 ///      Check per contributor: if the task was accepted, he loses exactly his active share at the moment of the
 ///      accepted submission and gets everything else back; if not accepted, he gets back everything he put in.
+/// forge-config: default.isolate = false
 contract ReviewQueue is Base {
     uint8 constant REJECT = 2;
 

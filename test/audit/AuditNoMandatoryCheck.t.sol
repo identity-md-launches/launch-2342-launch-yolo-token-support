@@ -6,6 +6,7 @@ import "../Base.t.sol";
 /// @title No mandatory check: every reward size is judged the same way
 /// @notice No reward size triggers a question to the swarm, nothing rejects a submission without a dispute,
 ///         and an appeal exists only against an NFT decision (Phase.Decided).
+/// forge-config: default.isolate = false
 contract AuditNoMandatoryCheckTest is Base {
     uint256 internal t;
     uint256 internal s;
