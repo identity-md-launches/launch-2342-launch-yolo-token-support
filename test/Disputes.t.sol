@@ -18,6 +18,7 @@ import "./Base.t.sol";
 /// whose $YOLO lock (YoloLockHub) had any power P at his submission and still runs at the payout gets
 /// b = 4% x min(1, P / R in $YOLO) of R from the stakers' 5%, the rest of it half burns, half treasury, and the
 /// NFT 5% nobody earned burns too.
+/// forge-config: default.isolate = false
 contract DisputesTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;
@@ -294,7 +295,11 @@ contract DisputesTest is Base {
         assertEq(uint8(_sub(s).outcome), uint8(Outcome.Accepted));
         assertEq(vault.credits(address(usdc), alice), SB + SB / 4, "own 1% bond + her pro-rata quarter of dave's");
         assertEq(vault.credits(address(imd), alice), F + F, "own 0.5 IMD + the stranger 0.5 IMD off the top");
-        assertEq(vault.credits(address(usdc), doer), 94.5e6 + DB + SB * 3 / 4, "the doer: 90% of 105 + the other three quarters");
+        assertEq(
+            vault.credits(address(usdc), doer),
+            94.5e6 + DB + SB * 3 / 4,
+            "the doer: 90% of 105 + the other three quarters"
+        );
         assertEq(vault.treasuryPot(address(usdc)), 10.5e6, "only the 10% fee (NFT wrong): no redirect of her share");
         _claimEverythingAndCheck();
     }
@@ -343,7 +348,12 @@ contract DisputesTest is Base {
         // (F - F = 0) split between bob and dave pro rata; rew-leg penalty DB has no stranger carve-out (0.5
         // IMD only ever comes from the imd leg), split pro rata between bob and dave (equal bonds).
         uint256 bobPartUsdc = DB * SB / (2 * SB);
-        assertEq(vault.credits(address(imd), bob), F /* stranger carve-out */ + F, /* his own bond back */ "his stranger fee + his own bond back");
+        assertEq(
+            vault.credits(address(imd), bob),
+            F /* stranger carve-out */ + F,
+            /* his own bond back */
+            "his stranger fee + his own bond back"
+        );
         assertEq(vault.credits(address(usdc), bob), bobPartUsdc + SB, "his share + his own bond back");
         assertEq(vault.treasuryPot(address(imd)), 0);
         assertEq(vault.treasuryPot(address(usdc)), 0);
@@ -364,7 +374,7 @@ contract DisputesTest is Base {
         vault.poke(t);
         assertEq(uint8(_phase(s)), uint8(Phase.NoDecision));
         uint256 i0 = imd.balanceOf(dave);
-        _callSwarm(dave, s); // the disputer calls for his own side: out of his bond 
+        _callSwarm(dave, s); // the disputer calls for his own side: out of his bond
         assertEq(imd.balanceOf(dave), i0);
         _answer(s, true);
         vault.poke(t);
@@ -492,7 +502,12 @@ contract DisputesTest is Base {
         // imd-leg disputer claim at 0. The rew leg (DB) has no such carve-out: split pro rata between dave and bob
         // (equal bonds, half each). Erin's silent call lost nothing but her fee (her bond came back at the
         // silence); bob's fee is simply spent, not refunded from the penalty.
-        assertEq(vault.credits(address(imd), bob), F /* stranger carve-out */ + F, /* his own bond back */ "stranger fee + own bond");
+        assertEq(
+            vault.credits(address(imd), bob),
+            F /* stranger carve-out */ + F,
+            /* his own bond back */
+            "stranger fee + own bond"
+        );
         assertEq(vault.credits(address(imd), erin), F); // her bond back at the silence; her fee was simply spent
         assertEq(vault.credits(address(usdc), erin), SB); // her bond's percent part, back at the silence
         (int256 daveImd, int256 daveUsdc) = _gains(dave);
@@ -531,9 +546,7 @@ contract DisputesTest is Base {
         assertEq(vault.credits(address(imd), erin), 3 * F); // three bonds back (fixed part)
         assertEq(vault.credits(address(usdc), erin), 3 * SB); // three bonds back (percent part)
         assertEq(vault.credits(address(imd), doer), F + F, "dave's bond to the doer");
-        assertEq(
-            vault.credits(address(usdc), doer), 90e6 + SB + DB, "reward + dave's bond share + the doer's own back"
-        );
+        assertEq(vault.credits(address(usdc), doer), 90e6 + SB + DB, "reward + dave's bond share + the doer's own back");
         (int256 erinImd, int256 erinUsdc) = _gains(erin);
         assertEq(erinImd, -int256(3 * PRICE), "her side lost: no fee back");
         assertEq(erinUsdc, 0, "every one of her three bonds came back in full");
@@ -577,7 +590,12 @@ contract DisputesTest is Base {
         // the top of the imd-leg penalty (F = dave's dispute bond) first - consuming it entirely here, leaving
         // dave's imd-leg disputer claim at 0. The rew leg (DB) has no such carve-out: split pro rata between
         // dave and erin (equal bonds, half each).
-        assertEq(vault.credits(address(imd), erin), F /* stranger carve-out */ + F, /* her own bond back */ "stranger fee + own bond");
+        assertEq(
+            vault.credits(address(imd), erin),
+            F /* stranger carve-out */ + F,
+            /* her own bond back */
+            "stranger fee + own bond"
+        );
         assertEq(vault.credits(address(usdc), erin), SB + DB / 2, "own bond + her rew-leg share");
         (int256 daveImd, int256 daveUsdc) = _gains(dave);
         assertEq(daveImd, 0, "erin's stranger carve-out took the whole imd-leg penalty");
@@ -593,7 +611,7 @@ contract DisputesTest is Base {
         vault.callSwarm(s, false, type(uint256).max, _noSwap(), _genericRuleTexts());
     }
 
-    // ================================================================== every fee of the winning side back 
+    // ================================================================== every fee of the winning side back
 
     /// no fee refund, in call order or otherwise. Two silent calls and an answered one,
     /// all for the disputers' side: every fee is simply spent; the penalty splits pro rata only between dave (the
@@ -629,7 +647,10 @@ contract DisputesTest is Base {
         // call also carves 0.5 IMD (= F here) off the top of the imd-leg penalty (F = dave's only bond) first -
         // consuming it entirely, leaving dave's imd-leg disputer claim at 0. The rew leg (DB2) has no such
         // carve-out: split pro rata between dave and erin (equal bonds, half each).
-        assertEq(vault.credits(address(imd), erin), 2 * F /* both bonds back */ + F /* stranger carve-out */);
+        assertEq(
+            vault.credits(address(imd), erin),
+            2 * F /* both bonds back */ + F /* stranger carve-out */
+        );
         assertEq(vault.credits(address(usdc), erin), 2 * SB2 + DB2 / 2);
         assertEq(vault.credits(address(imd), bob), F, "silent call: bond back, fee simply spent");
         assertEq(vault.credits(address(usdc), bob), SB2);
@@ -659,7 +680,7 @@ contract DisputesTest is Base {
         uint256 s2 = _submit(doer2, t2);
         _dispute(dave, s2); // F, SB2
         _warp(24 hours);
-        _callSwarm(doer2, s2, true); // silent, for the doer: paid out of his doer bond 
+        _callSwarm(doer2, s2, true); // silent, for the doer: paid out of his doer bond
         _silent(s2);
         vault.poke(t2);
         _callSwarm(erin, s2, false); // a stranger, answered: the doer is right
@@ -673,9 +694,7 @@ contract DisputesTest is Base {
         (int256 doer2Imd, int256 doer2Usdc) = _gains(doer2, s2);
         (int256 erinImd, int256 erinUsdc) = _gains(erin, s2);
         assertEq(doer2Imd, int256(F), "the penalty (2F) minus his bond's F, of which PRICE paid his silent call");
-        assertEq(
-            doer2Usdc, int256(900e6 + 2 * SB2), "reward 90% + the whole USDC penalty: dave's and erin's bonds"
-        );
+        assertEq(doer2Usdc, int256(900e6 + 2 * SB2), "reward 90% + the whole USDC penalty: dave's and erin's bonds");
         assertEq(erinImd, -int256(F + PRICE), "her call bond and fee, both lost: her side lost");
         assertEq(erinUsdc, -int256(SB2));
         _claimEverythingAndCheck();
@@ -691,7 +710,7 @@ contract DisputesTest is Base {
         for (uint256 i; i < 3; ++i) {
             _appeal(doer, s);
             // the first fee comes out of his doer bond (F = PRICE); the bond spent, the next ones from his wallet,
-            // still without a second bond 
+            // still without a second bond
             assertEq(i0 - imd.balanceOf(doer), i * PRICE);
             _askAppealSwarm(s); // lazy ask
             assertEq(uint8(_phase(s)), uint8(Phase.Asked));
@@ -812,7 +831,7 @@ contract DisputesTest is Base {
         _dispute(dave, s);
         _vote(s, 1, REJECT, 120, 20); // = instantDelta: decides at once
         uint256 i0 = imd.balanceOf(doer);
-        _appeal(doer, s); // the doer appeals the "reject" decision, out of his doer bond 
+        _appeal(doer, s); // the doer appeals the "reject" decision, out of his doer bond
         assertEq(imd.balanceOf(doer), i0);
         assertTrue(vault.getAppeal(s).sidesDoer);
         _askAppealSwarm(s); // lazy ask
@@ -878,7 +897,12 @@ contract DisputesTest is Base {
         // (dave's F dispute bond), leaving dave's disputer claim on the imd leg at 0. The rew leg has no such
         // carve-out (0.5 IMD only ever comes from the imd leg): erin's appellant carve-out and dave's
         // disputer share split DB pro rata to their equal rew bonds (both SB).
-        assertEq(vault.credits(address(imd), erin), F /* stranger carve-out */ + F, /* her own appeal bond back */ "stranger fee + her own bond back");
+        assertEq(
+            vault.credits(address(imd), erin),
+            F /* stranger carve-out */ + F,
+            /* her own appeal bond back */
+            "stranger fee + her own bond back"
+        );
         uint256 appPartUsdc = DB * SB / (2 * SB);
         (int256 daveImd, int256 daveUsdc) = _gains(dave);
         (int256 erinImd, int256 erinUsdc) = _gains(erin);
@@ -1010,7 +1034,7 @@ contract DisputesTest is Base {
         _claimEverythingAndCheck();
     }
 
-    // ================================================================== doer stake bonus and burn 
+    // ================================================================== doer stake bonus and burn
 
     /// @dev power worth the reward = the whole 4%; $100 = 1M $YOLO at $0.0001.
     uint256 internal constant STAKE = 1_000_000e18;
@@ -1086,9 +1110,7 @@ contract DisputesTest is Base {
         assertEq(uint8(_sub(s2).outcome), uint8(Outcome.Accepted));
         assertEq(vault.getSettlement(s2).stakeBps, 400);
         assertEq(
-            vault.credits(address(usdc), doer2),
-            94e6 + 3e6 + 0.5e6,
-            "90%+stake, his rew bond, half of dave's rew bond"
+            vault.credits(address(usdc), doer2), 94e6 + 3e6 + 0.5e6, "90%+stake, his rew bond, half of dave's rew bond"
         );
         assertEq(vault.getSettlement(s2).voterFee, 5e6);
         assertEq(usdc.balanceOf(buybackWallet), 0.5e6);
@@ -1165,7 +1187,9 @@ contract DisputesTest is Base {
         assertEq(uint8(_sub(s2).outcome), uint8(Outcome.Accepted));
         assertEq(vault.getSettlement(s2).stakeBps, 400, "full 4% stake bonus, fixed at submission");
         // his top-up during the check joined the reward: R = 105
-        assertEq(vault.credits(address(usdc), doer2), 98.7e6 + 3e6, "94% (90% + 4% stake) of 105 plus his rew bond back");
+        assertEq(
+            vault.credits(address(usdc), doer2), 98.7e6 + 3e6, "94% (90% + 4% stake) of 105 plus his rew bond back"
+        );
         assertEq(vault.treasuryPot(address(usdc)), 0.525e6, "stake, full power: half of the 1% left");
         vm.prank(doer2);
         vm.expectRevert(NothingToClaim.selector);
@@ -1186,7 +1210,9 @@ contract DisputesTest is Base {
         assertEq(_sub(s2).stakeBps, 100);
         _warp(24 hours);
         vault.poke(t2);
-        assertEq(vault.credits(address(usdc), doer2), 90e6 + 3e6, "the lock ended: as without a stake, plus his rew bond");
+        assertEq(
+            vault.credits(address(usdc), doer2), 90e6 + 3e6, "the lock ended: as without a stake, plus his rew bond"
+        );
         assertEq(vault.getSettlement(s2).stakeBps, 0);
         vm.prank(doer2);
         hub.withdraw(); // ended: free to leave
@@ -1199,7 +1225,9 @@ contract DisputesTest is Base {
         uint256 s3 = _submit(doer3, t3);
         _warp(24 hours);
         vault.poke(t3);
-        assertEq(vault.credits(address(usdc), doer3), 94e6 + 3e6, "locked again before the submission, plus his rew bond");
+        assertEq(
+            vault.credits(address(usdc), doer3), 94e6 + 3e6, "locked again before the submission, plus his rew bond"
+        );
         assertEq(vault.getSettlement(s3).stakeBps, 400);
         _claimEverythingAndCheck();
     }
@@ -1305,5 +1333,4 @@ contract DisputesTest is Base {
         _vote(s, 1, ACCEPT, 120, 20);
         assertEq(uint8(_phase(s)), uint8(Phase.Decided));
     }
-
 }

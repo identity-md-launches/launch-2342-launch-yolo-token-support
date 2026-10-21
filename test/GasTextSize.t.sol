@@ -7,6 +7,7 @@ import {rulesForehead, rulesSupermarket} from "./mocks/TaskRulesFixture.sol";
 /// @dev createTask / submit / dispute gas with representative real-world task
 ///      texts (forehead, supermarket) and with 3x512B (every field at the maxTextBytes ceiling), split into
 ///      "text bytes" vs "everything else" by diffing against a 1-byte-text baseline on the same contract call path.
+/// forge-config: default.isolate = false
 contract GasTextSizeTest is Base {
     function setUp() public override {
         super.setUp();
@@ -14,7 +15,11 @@ contract GasTextSizeTest is Base {
     }
 
     uint256 internal g0;
-    function _start() internal { g0 = gasleft(); }
+
+    function _start() internal {
+        g0 = gasleft();
+    }
+
     function _measure(string memory name) internal returns (uint256 g) {
         g = g0 - gasleft();
         emit log_named_uint(name, g);
@@ -22,7 +27,9 @@ contract GasTextSizeTest is Base {
 
     function _bytes(bytes1 ch, uint256 n) internal pure returns (string memory) {
         bytes memory b = new bytes(n);
-        for (uint256 i; i < n; ++i) b[i] = ch;
+        for (uint256 i; i < n; ++i) {
+            b[i] = ch;
+        }
         return string(b);
     }
 
@@ -33,6 +40,7 @@ contract GasTextSizeTest is Base {
         );
     }
 
+    /// forge-config: default.isolate = true
     function test_CreateTask_RealExamples_And_MaxText() public {
         // minimal baseline: 1 byte per field (3 bytes of rule text total)
         TaskRules memory tiny = TaskRules(_bytes("a", 1), _bytes("a", 1), _bytes("a", 1));
@@ -88,7 +96,12 @@ contract GasTextSizeTest is Base {
         // otherwise) - _submit's plain _noEvidence() does not carry one, unlike every other test in this file.
         vm.prank(doer);
         uint256 s = vault.submit{value: ETH_BOND_HEADROOM}(
-            t, "https://x.com/doer/status/1", Evidence("https://i.imgur.com/screenshot.png", ""), 0, type(uint256).max, _noSwap()
+            t,
+            "https://x.com/doer/status/1",
+            Evidence("https://i.imgur.com/screenshot.png", ""),
+            0,
+            type(uint256).max,
+            _noSwap()
         );
         vm.prank(dave);
         vault.dispute{value: ETH_BOND_HEADROOM}(s, _bytes("r", 512), _bytes("p", 512), _noSwap());

@@ -11,6 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///      back). Nobody on the winning side: the losing pool goes to the author and the doer. Deferred 5%: Completed ->
 ///      2.5% author + 2.5% accepted doer, otherwise burned. Anyone may predict, the author, contributors and the doer
 ///      included. No cap, no per-address limit, no price.
+/// forge-config: default.isolate = false
 contract YoloPredictTest is Base {
     YoloPredict internal yoloPredict;
     uint256 internal constant MIN_POSITION = 0.5e18;
@@ -394,7 +395,9 @@ contract YoloPredictTest is Base {
         yoloPredict.settle(t);
         assertEq(yolo.balanceOf(author) - author0, 0.5e18, "2.5% to the author");
         assertEq(yolo.balanceOf(doer) - doer0, 0.5e18, "2.5% to the doer, deferred part");
-        assertEq(yolo.balanceOf(DEAD) - dead0, 1e18, "only the held entry 5%: the doer is still in the split, lone winner");
+        assertEq(
+            yolo.balanceOf(DEAD) - dead0, 1e18, "only the held entry 5%: the doer is still in the split, lone winner"
+        );
         yoloPredict.settle(t); // once only
 
         doer0 = yolo.balanceOf(doer);
@@ -471,7 +474,11 @@ contract YoloPredictTest is Base {
         uint256 a0 = yolo.balanceOf(alice);
         vm.prank(alice);
         yoloPredict.claim(t);
-        assertEq(yolo.balanceOf(alice) - a0, 9e18 + 0.9e18 + 18e18 - daveShare, "her two positions' 90% plus the rest of the pool");
+        assertEq(
+            yolo.balanceOf(alice) - a0,
+            9e18 + 0.9e18 + 18e18 - daveShare,
+            "her two positions' 90% plus the rest of the pool"
+        );
         assertEq(yolo.balanceOf(DEAD) - dead0, 2.05e18, "only the held entry 5% of 41, at settle");
         assertEq(yolo.balanceOf(address(yoloPredict)), 0);
     }
@@ -490,7 +497,11 @@ contract YoloPredictTest is Base {
         uint256 a0 = yolo.balanceOf(alice);
         vm.prank(alice);
         yoloPredict.claim(t);
-        assertEq(yolo.balanceOf(alice) - a0, 9e18 + 0.9e18 + 9e18, "both her positions' 90% plus bob's whole pool (lone winner)");
+        assertEq(
+            yolo.balanceOf(alice) - a0,
+            9e18 + 0.9e18 + 9e18,
+            "both her positions' 90% plus bob's whole pool (lone winner)"
+        );
         vm.prank(bob);
         yoloPredict.claim(t);
         assertEq(yolo.balanceOf(address(yoloPredict)), 0);

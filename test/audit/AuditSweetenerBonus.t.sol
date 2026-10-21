@@ -20,6 +20,7 @@ interface IAuditVesting {
 }
 
 /// @notice The bonus rules: any amount, no swarm check; the bonus is locked like the reward.
+/// forge-config: default.isolate = false
 contract AuditSweetenerBonus is Base {
     function _sweeten(address who, uint256 taskId, uint256 amount) internal {
         vm.prank(who);
@@ -74,7 +75,9 @@ contract AuditSweetenerBonus is Base {
         sweetener.payout(t);
         (uint256 toDoer,, uint256 burned) = _split(bonus, false, 0);
         assertEq(yolo.balanceOf(doer) - before, toDoer, "the whole bonus minus 10%");
-        assertEq(yolo.balanceOf(address(burner)) - deadBefore, burned, "the fee burns (no NFT decision, no treasury YOLO)");
+        assertEq(
+            yolo.balanceOf(address(burner)) - deadBefore, burned, "the fee burns (no NFT decision, no treasury YOLO)"
+        );
         assertEq(toDoer + burned, bonus);
         assertEq(yolo.balanceOf(treasury), 0, "the treasury gets no YOLO");
         assertEq(sweetener.bonusOf(t), 0);
@@ -238,8 +241,7 @@ contract AuditVestingClock is Test {
         LocalFactory f = new LocalFactory();
         LaunchPlan.Owners memory o =
             LaunchPlan.Owners(treasury, makeAddr("inc"), makeAddr("stab"), makeAddr("dev"), makeAddr("team"));
-        (bytes[] memory codes,, LaunchPlan.Genesis memory g) =
-            LaunchPlan.genesisLaunchWith(f, 0, o, address(nft));
+        (bytes[] memory codes,, LaunchPlan.Genesis memory g) = LaunchPlan.genesisLaunchWith(f, 0, o, address(nft));
         f.launchContracts(0, codes);
         skip(30 days);
         YoloToken yolo = new YoloToken(PM, g.gate, treasury, block.timestamp);

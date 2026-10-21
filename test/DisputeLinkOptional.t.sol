@@ -6,6 +6,7 @@ import "./Base.t.sol";
 /// @dev The disputer's own proof link is optional: an empty link passes and
 ///      leaves no "claim_1_proof" definition in the swarm question; a non-empty link follows the text rule; the
 ///      reason stays mandatory.
+/// forge-config: default.isolate = false
 contract DisputeLinkOptionalTest is Base {
     function _disputeWith(address who, uint256 subId, string memory reason, string memory link) internal {
         vm.prank(who);
@@ -60,7 +61,9 @@ contract DisputeLinkOptionalTest is Base {
         vm.expectRevert(BadText.selector);
         _disputeWith(dave, s, DISPUTE_REASON, unicode"https://x.com/é");
         bytes memory long = new bytes(513);
-        for (uint256 i; i < long.length; ++i) long[i] = "a";
+        for (uint256 i; i < long.length; ++i) {
+            long[i] = "a";
+        }
         vm.expectRevert(BadText.selector);
         _disputeWith(dave, s, DISPUTE_REASON, string(long));
         // a valid link still works and reaches the swarm as claim_1_proof

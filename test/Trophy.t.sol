@@ -9,6 +9,7 @@ import {LaunchPlan, LocalFactory} from "../script/LaunchPlan.sol";
 
 /// @dev DareTrophy: the doer of an accepted submission mints its NFT trophy once, burning its price in YOLO; the
 ///      metadata (JSON + SVG badge) are built on chain.
+/// forge-config: default.isolate = false
 contract TrophyTest is Base {
     function test_DoerMintsOnceBurningYolo() public {
         (uint256 t, uint256 s) = _accepted(address(usdc), 12_345_678, 3); // 12.345678 USDC, category sport
@@ -128,8 +129,10 @@ contract TrophyTest is Base {
 
     // ---- TrophyCatalog ----
 
-    string constant SVG1 = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' fill='#f5c542'/></svg>";
-    string constant SVG2 = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='#1e88e5'/></svg>";
+    string constant SVG1 =
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' fill='#f5c542'/></svg>";
+    string constant SVG2 =
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='#1e88e5'/></svg>";
 
     function _add(string memory name, string memory svg) internal returns (uint256 id) {
         vm.prank(multisig);
@@ -267,17 +270,25 @@ contract TrophyTest is Base {
         vm.expectRevert(TrophyCatalog.BadImage.selector);
         catalog.addDesign("x", abi.encodePacked("<svg>", hex"c3a9", "</svg>"));
         bytes memory big = new bytes(8_193);
-        for (uint256 i; i < big.length; ++i) big[i] = "a";
+        for (uint256 i; i < big.length; ++i) {
+            big[i] = "a";
+        }
         bytes memory pre = "<svg";
         bytes memory post = "</svg>";
-        for (uint256 i; i < 4; ++i) big[i] = pre[i];
-        for (uint256 i; i < 6; ++i) big[big.length - 6 + i] = post[i];
+        for (uint256 i; i < 4; ++i) {
+            big[i] = pre[i];
+        }
+        for (uint256 i; i < 6; ++i) {
+            big[big.length - 6 + i] = post[i];
+        }
         vm.expectRevert(TrophyCatalog.BadImage.selector);
         catalog.addDesign("x", big);
         assembly ("memory-safe") {
             mstore(big, 8192)
         }
-        for (uint256 i; i < 6; ++i) big[8192 - 6 + i] = post[i];
+        for (uint256 i; i < 6; ++i) {
+            big[8192 - 6 + i] = post[i];
+        }
         uint256 g = gasleft();
         uint256 id = catalog.addDesign("Max", big);
         console.log("addDesign gas, 8192-byte SVG:", g - gasleft());
@@ -393,7 +404,8 @@ contract TrophyTest is Base {
         uint256 k;
         for (uint256 i; i < d.length; i += 4) {
             uint256 n = (uint256(rev[uint8(d[i])]) << 18) | (uint256(rev[uint8(d[i + 1])]) << 12)
-                | (uint256(d[i + 2] == "=" ? 0 : rev[uint8(d[i + 2])]) << 6) | uint256(d[i + 3] == "=" ? 0 : rev[uint8(d[i + 3])]);
+                | (uint256(d[i + 2] == "=" ? 0 : rev[uint8(d[i + 2])]) << 6)
+                | uint256(d[i + 3] == "=" ? 0 : rev[uint8(d[i + 3])]);
             if (k < out.length) out[k++] = bytes1(uint8(n >> 16));
             if (k < out.length) out[k++] = bytes1(uint8(n >> 8));
             if (k < out.length) out[k++] = bytes1(uint8(n));

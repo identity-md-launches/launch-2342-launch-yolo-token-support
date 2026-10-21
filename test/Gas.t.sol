@@ -7,6 +7,7 @@ import "./Base.t.sol";
 ///      -vv; numbers are also asserted against loose ceilings (vault + two desks, parameters read from the
 ///      registry per call). createTask reads no price (no USD lookup, no DevPrices call): cheaper than
 ///      its 450k ceiling, a loose upper bound.
+/// forge-config: default.isolate = false
 contract GasTest is Base {
     function setUp() public override {
         super.setUp();

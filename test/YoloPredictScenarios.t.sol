@@ -11,6 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// accepted doer, the author and a contributor predict like anyone else (no exclusion from the split); the reward
 /// is locked until the deadline, and a market voids only when the dev wallet cancels the task (Unwound). Every test checks exact wei balances and the
 /// invariant: burned + paid + held == deposited, the contract left at exactly 0 after every claim.
+/// forge-config: default.isolate = false
 contract YoloPredictScenariosTest is Base {
     YoloPredict internal yoloPredict;
     uint256 internal constant MIN_POSITION = 0.5e18;
@@ -354,7 +355,9 @@ contract YoloPredictScenariosTest is Base {
         uint256 author0 = yolo.balanceOf(author);
         uint256 doer0 = yolo.balanceOf(doer);
         _accept(doer, t);
-        assertEq(uint8(yoloPredict.resolution(t)), uint8(YoloPredict.Resolution.WillDoWon), "winning side empty: no void");
+        assertEq(
+            uint8(yoloPredict.resolution(t)), uint8(YoloPredict.Resolution.WillDoWon), "winning side empty: no void"
+        );
 
         uint256 before = yolo.balanceOf(bob);
         vm.prank(bob);
@@ -442,7 +445,11 @@ contract YoloPredictScenariosTest is Base {
         uint256 before = yolo.balanceOf(alice);
         vm.prank(alice);
         yoloPredict.claim(t);
-        assertEq(yolo.balanceOf(alice) - before, 9e18 + 0.9e18 + 9e18, "both positions' 90% plus bob's whole pool, lone winner");
+        assertEq(
+            yolo.balanceOf(alice) - before,
+            9e18 + 0.9e18 + 9e18,
+            "both positions' 90% plus bob's whole pool, lone winner"
+        );
         assertEq(yolo.balanceOf(address(yoloPredict)), 0);
     }
 
@@ -457,7 +464,11 @@ contract YoloPredictScenariosTest is Base {
         uint256 before = yolo.balanceOf(doer);
         vm.prank(doer);
         yoloPredict.claim(t);
-        assertEq(yolo.balanceOf(doer) - before, 9e18 + 9e18 + 0.5e18, "own 90% + bob's whole pool (lone winner) + the deferred 2.5%");
+        assertEq(
+            yolo.balanceOf(doer) - before,
+            9e18 + 9e18 + 0.5e18,
+            "own 90% + bob's whole pool (lone winner) + the deferred 2.5%"
+        );
         assertEq(yolo.balanceOf(address(yoloPredict)), 0);
     }
 
@@ -684,7 +695,12 @@ contract YoloPredictScenariosTest is Base {
         yoloPredict.claim(t);
         // the split is remaining/remaining (the pool left over the points left): after alice's floor the doer's
         // share may be 1 wei above the share of the original totals
-        assertApproxEqAbs(yolo.balanceOf(doer) - doerBefore, 9e18 + Math.mulDiv(18e18, doerPts, willPts), 1, "doer: own 90% plus his points share");
+        assertApproxEqAbs(
+            yolo.balanceOf(doer) - doerBefore,
+            9e18 + Math.mulDiv(18e18, doerPts, willPts),
+            1,
+            "doer: own 90% plus his points share"
+        );
         _claimAll(t, who);
 
         assertEq(yolo.balanceOf(DEAD) - deadBefore, 2.25e18, "only the 5% entry burn");
@@ -873,10 +889,13 @@ contract YoloPredictScenariosTest is Base {
 
     /// @dev Burned + paid + held == deposited (paid = everything that left the market for a person: claims and the
     /// deferred 5%).
-    function _checkInvariant(uint256 t, address[] memory who, uint256[] memory bal0, uint256[] memory dep, uint256 dead0)
-        internal
-        view
-    {
+    function _checkInvariant(
+        uint256 t,
+        address[] memory who,
+        uint256[] memory bal0,
+        uint256[] memory dep,
+        uint256 dead0
+    ) internal view {
         t;
         uint256 paid;
         uint256 deposited;

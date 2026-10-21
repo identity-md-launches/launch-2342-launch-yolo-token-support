@@ -10,6 +10,7 @@ import "./Base.t.sol";
 /// - a vote passes exactly when the side is 1/2, the wallet has no other side, every id is held by the voter now
 /// (owner or delegate) and none voted in this dispute (nor repeats in the list); then it counts the ids;
 /// - per dispute, the votes equal the ids marked voted, never more than the NFTs in existence.
+/// forge-config: default.isolate = false
 contract VotePowerFuzzTest is Base {
     uint256 internal constant N = 24; // NFTs of the fuzz: ids FIRST..FIRST+N-1
     uint256 internal constant FIRST = 50_000;

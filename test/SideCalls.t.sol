@@ -8,6 +8,7 @@ import "./Base.t.sol";
 ///      for the swarm leave its bond. Won: the rest of its bond + the loser's bond. Lost: the rest of its bond to the
 ///      winner. A stranger posts a dispute bond and pays the fee. USDC task R = 100, F = 0.5 IMD, swarm
 ///      fee PRICE = 0.5 IMD (Base.t.sol), doer bond DB = 3 USDC, dispute bond SB = 1 USDC.
+/// forge-config: default.isolate = false
 contract SideCallsTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

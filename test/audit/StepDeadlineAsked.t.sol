@@ -5,6 +5,7 @@ import "../Base.t.sol";
 
 /// @dev Reaudit logic #7: in Phase.Asked, stepDeadline is askedAt + 6 h + grace while the request is pending, and
 ///      now once the Intake closed the request without an answer (the next poke declares the silence at once).
+/// forge-config: default.isolate = false
 contract StepDeadlineAskedTest is Base {
     uint256 internal t;
     uint256 internal s;

@@ -7,6 +7,7 @@ import {YoloPredict} from "../../src/YoloPredict.sol";
 /// @dev `YoloPredict` checks with a contributor who also predicts: the reward is locked until the deadline, the
 ///      market never reads the pot after the outcome and voids only on Unwound, so moving the reward changes no
 ///      market result; the numbers match the honest outcome.
+/// forge-config: default.isolate = false
 contract YoloModulesAuditTest is Base {
     YoloPredict internal yoloPredict;
     uint256 internal constant MIN_POSITION = 0.5e18;
@@ -69,7 +70,9 @@ contract YoloModulesAuditTest is Base {
         vm.prank(alice);
         yoloPredict.claim(t);
         assertEq(yolo.balanceOf(alice) - aliceBefore, 0, "alice's losing position pays nothing, no rescue");
-        assertEq(yolo.balanceOf(DEAD) - dead0, 1e18 + 1e18, "the held entry 5% + the deferred 5% burn at settle: not done");
+        assertEq(
+            yolo.balanceOf(DEAD) - dead0, 1e18 + 1e18, "the held entry 5% + the deferred 5% burn at settle: not done"
+        );
 
         uint256 bobBefore = yolo.balanceOf(bob);
         vm.prank(bob);

@@ -8,6 +8,7 @@ import "./Base.t.sol";
 ///      `tx` = vm.lastCallGas().gasTotalUsed. Run with --isolate for `tx` to be a separate transaction (cold storage,
 ///      21k base and calldata included), as on mainnet. The 25- and 100-NFT votes cross instantDelta (20) and so
 ///      include the instant decision; `*_noDecide` raise instantDelta to show the vote alone.
+/// forge-config: default.isolate = false
 contract VoteGasTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

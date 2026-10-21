@@ -10,6 +10,7 @@ import "../../src/VaultTypes.sol";
 ///      Hypothesis: a transaction with gas set tight pushes the Intake into OOG, the catch branch fires, and the
 ///      question to the swarm is skipped / the appeal is voided. Sweeping the gas limit in steps of 2000 finds no
 ///      such limit: every starved call reverts. These tests confirm it with a mock Intake.
+/// forge-config: default.isolate = false
 contract ReviewGasGrief is Base {
     uint8 constant REJECT = 2;
 

@@ -5,6 +5,7 @@ import "./Base.t.sol";
 import {ParamsBounds} from "../src/VaultParams.sol";
 
 /// @dev Tasks, contributions, withdrawals, deadlines, the queue and the flat bond, parameter versions.
+/// forge-config: default.isolate = false
 contract TasksTest is Base {
     // ================================================================== creation
 
@@ -66,9 +67,8 @@ contract TasksTest is Base {
     /// @notice No creation fee: a task is created with msg.value 0, the treasury gets nothing.
     function test_CreateTask_NoAuthorFee() public {
         vm.prank(author);
-        uint256 t = vault.createTask(
-            address(usdc), 5e6, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap()
-        );
+        uint256 t =
+            vault.createTask(address(usdc), 5e6, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap());
         trackedTasks.push(t);
         assertEq(vault.treasuryPot(ETH), 0);
         assertEq(vault.liabilities(ETH), 0);
@@ -207,13 +207,25 @@ contract TasksTest is Base {
 
         assertEq(vault.credits(address(usdc), doer), 94e6 + 3e6, "94% plus his rew bond back");
         assertEq(vault.getSettlement(s1).stakeBps, 400);
-        assertEq(usdc.balanceOf(buybackWallet), 5.5e6 + 6.05e6, "per staked payout: half of the 1% left + the unearned NFT 5%");
+        assertEq(
+            usdc.balanceOf(buybackWallet),
+            5.5e6 + 6.05e6,
+            "per staked payout: half of the 1% left + the unearned NFT 5%"
+        );
         assertEq(usdc.balanceOf(address(burner)), 0, "autosent, nothing waits in the burner");
         assertEq(vault.credits(address(usdc), doer2), 90e6 + 3e6, "90% plus his rew bond back");
         assertEq(vault.getSettlement(s2).stakeBps, 0);
-        assertEq(vault.credits(address(usdc), doer3), 103.4e6 + 3e6, "contributor doer: 94% of 100 + 10, plus his rew bond back");
+        assertEq(
+            vault.credits(address(usdc), doer3),
+            103.4e6 + 3e6,
+            "contributor doer: 94% of 100 + 10, plus his rew bond back"
+        );
         assertEq(vault.getSettlement(s3).stakeBps, 400);
-        assertEq(vault.treasuryPot(address(usdc)), 0.5e6 + 10e6 + 0.55e6, "half the 1% left of each staked payout, 10 from doer2");
+        assertEq(
+            vault.treasuryPot(address(usdc)),
+            0.5e6 + 10e6 + 0.55e6,
+            "half the 1% left of each staked payout, 10 from doer2"
+        );
         // doer3's top-up went into his payout: nothing to take back
         vm.prank(doer3);
         vm.expectRevert(NothingToClaim.selector);

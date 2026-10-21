@@ -7,6 +7,7 @@ import {YoloPredict} from "../src/YoloPredict.sol";
 /// @dev (1) Only the dev wallet (the owner of the task's DevPrices) cancels
 /// an open task; (2) everyone takes back exactly what he put in, each with his own claim; (3) the dev wallet gets
 /// nothing; swarm fees already paid stay paid; (4) no cancellation after the final payout.
+/// forge-config: default.isolate = false
 contract CancelTaskTest is Base {
     uint8 internal constant ACCEPT = 1;
     YoloPredict internal yoloPredict;
@@ -203,7 +204,9 @@ contract CancelTaskTest is Base {
         vault.topUp(t, 1e6, _noSwap());
         vm.prank(doer);
         vm.expectRevert();
-        vault.submit{value: ETH_BOND_HEADROOM}(t, "https://x.com/doer/status/1", _noEvidence(), 0, type(uint256).max, _noSwap());
+        vault.submit{value: ETH_BOND_HEADROOM}(
+            t, "https://x.com/doer/status/1", _noEvidence(), 0, type(uint256).max, _noSwap()
+        );
         vm.prank(bob);
         vm.expectRevert(YoloSweetener.TaskNotOpen.selector);
         sweetener.sweeten(t, 1_000e18);

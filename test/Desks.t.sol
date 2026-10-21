@@ -39,6 +39,7 @@ contract MockDoerStake {
 }
 
 /// @dev The launch split: one public vault, two desks behind it. Who may call what, and the forwarding itself.
+/// forge-config: default.isolate = false
 contract DesksTest is Base {
     address internal stranger = makeAddr("stranger");
 
@@ -107,8 +108,9 @@ contract DesksTest is Base {
             address(yolo),
             address(hub)
         );
-        DisputeDesk dd =
-            new DisputeDesk(address(registry), address(imd), address(usdc), address(text), ballots, address(yolo), stranger);
+        DisputeDesk dd = new DisputeDesk(
+            address(registry), address(imd), address(usdc), address(text), ballots, address(yolo), stranger
+        );
         assertEq(address(dd.doerStake()), stranger);
         cd = new CaseDesk(
             address(registry),
@@ -153,7 +155,8 @@ contract DesksTest is Base {
         vm.prank(doer);
         imd.approve(address(v2), type(uint256).max);
         vm.prank(author);
-        uint256 t = v2.createTask(address(usdc), 100e6, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap());
+        uint256 t =
+            v2.createTask(address(usdc), 100e6, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap());
         vm.prank(doer);
         uint256 s = v2.submit(t, "https://x.com/doer/status/1", _noEvidence(), 0, type(uint256).max, _noSwap());
         _warp(24 hours);
@@ -178,8 +181,15 @@ contract DesksTest is Base {
         v = ITaskVault(
             address(
                 new TaskVault(
-                    r, address(imd), address(usdc), address(yolo), address(new AttestationChecker(r)), address(text),
-                    address(cd), address(dd), address(burner)
+                    r,
+                    address(imd),
+                    address(usdc),
+                    address(yolo),
+                    address(new AttestationChecker(r)),
+                    address(text),
+                    address(cd),
+                    address(dd),
+                    address(burner)
                 )
             )
         );
@@ -225,8 +235,9 @@ contract DesksTest is Base {
         }
         // mode 4 with another submission time expected: the desk passes submittedAt, so the answer is 0
         vm.prank(author);
-        uint256 t2 =
-            v.createTask(address(usdc), 100e6, uint64(_now() + 7 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap());
+        uint256 t2 = v.createTask(
+            address(usdc), 100e6, uint64(_now() + 7 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap()
+        );
         vm.prank(doer);
         uint256 s2 = v.submit(t2, "https://x.com/doer/status/1", _noEvidence(), 0, type(uint256).max, _noSwap());
         m.set(4, doer, v.getSubmission(s2).submittedAt + 1);
@@ -236,8 +247,9 @@ contract DesksTest is Base {
         // the hub fails at the submission: submitted all the same, no bonus fixed
         m.setPowerFails(true);
         vm.prank(author);
-        uint256 t3 =
-            v.createTask(address(usdc), 100e6, uint64(_now() + 7 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap());
+        uint256 t3 = v.createTask(
+            address(usdc), 100e6, uint64(_now() + 7 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap()
+        );
         vm.prank(doer);
         uint256 s3 = v.submit(t3, "https://x.com/doer/status/1", _noEvidence(), 0, type(uint256).max, _noSwap());
         assertEq(v.getSubmission(s3).stakeBps, 0);
@@ -361,8 +373,7 @@ contract DesksTest is Base {
         uint256 s = _submit(doer, t);
         vm.deal(doer, 1 ether);
         vm.prank(doer);
-        (bool ok, bytes memory ret) =
-            address(vault).call{value: 1}(abi.encodeCall(ITaskVault.claimVoidSubmission, (s)));
+        (bool ok, bytes memory ret) = address(vault).call{value: 1}(abi.encodeCall(ITaskVault.claimVoidSubmission, (s)));
         assertFalse(ok);
         assertEq(bytes4(ret), TaskVault.NotPayable.selector);
         vm.prank(doer);

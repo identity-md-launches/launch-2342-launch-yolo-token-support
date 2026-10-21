@@ -19,6 +19,7 @@ contract CoverSink {
 }
 
 /// @dev Category and cover set once at creation: limits, the TaskCreated event, the swarm question without them, gas.
+/// forge-config: default.isolate = false
 contract CoverTest is Base {
     /// @dev A real CIDv1 (raw, sha256, base32): 59 characters, 66 bytes with the scheme.
     string internal constant IPFS_COVER = "ipfs://bafkreidivzimqfqtoqxkrpge6bjyhlvxqs3rhe73owtmdulaxr5do5in7u";
@@ -46,7 +47,9 @@ contract CoverTest is Base {
     function _expectBadCover(string memory cover) internal {
         vm.prank(author);
         vm.expectRevert(BadCover.selector);
-        vault.createTask{value: 0.001 ether}(address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("c"), 0, 0, cover, _noSwap());
+        vault.createTask{value: 0.001 ether}(
+            address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("c"), 0, 0, cover, _noSwap()
+        );
     }
 
     function test_CategoryStoredAndCoverEmitted() public {
@@ -70,7 +73,9 @@ contract CoverTest is Base {
         assertEq(task.category, 4);
         // storage holds only the hash; the full text is in the TaskCreated event
         // asserted above (vm.expectEmit) - this checks the hash still matches it byte for byte.
-        assertEq(task.rulesHash, keccak256(abi.encode("Post a thread on X | Proof: link", TEST_RULE_PROOF, TEST_RULE_NO)));
+        assertEq(
+            task.rulesHash, keccak256(abi.encode("Post a thread on X | Proof: link", TEST_RULE_PROOF, TEST_RULE_NO))
+        );
         assertEq(uint8(task.status), uint8(TaskStatus.Open));
         assertEq(task.currency, address(usdc)); // packing the category next to it did not corrupt the slot
         assertEq(task.busyEpoch, 0);
@@ -87,7 +92,9 @@ contract CoverTest is Base {
         );
         vm.prank(author);
         vm.expectRevert(BadCategory.selector);
-        vault.createTask{value: 0.001 ether}(address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("c"), 255, 0, "", _noSwap());
+        vault.createTask{value: 0.001 ether}(
+            address(usdc), 50e6, uint64(_now() + TTL), "Title", rulesOf("c"), 255, 0, "", _noSwap()
+        );
     }
 
     function test_CoverLinksAccepted() public {
@@ -127,7 +134,9 @@ contract CoverTest is Base {
         _warp(24 hours);
         vault.poke(t);
         (bytes memory body,) = vault.previewSwarmBody(
-            s, 2, RuleTexts("Post a thread on X | Proof: link", TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF)
+            s,
+            2,
+            RuleTexts("Post a thread on X | Proof: link", TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF)
         );
         assertFalse(_contains(body, bytes("bafkrei")));
         assertFalse(_contains(body, bytes("ipfs://bafk")));
@@ -156,6 +165,7 @@ contract CoverTest is Base {
         _claimEverythingAndCheck();
     }
 
+    /// forge-config: default.isolate = true
     function test_GasCover() public {
         uint256 g = gasleft();
         _createWith(0, "");

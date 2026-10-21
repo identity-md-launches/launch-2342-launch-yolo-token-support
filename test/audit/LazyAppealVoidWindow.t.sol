@@ -8,6 +8,7 @@ import "../../src/VaultTypes.sol";
 ///      the 24 h appeal window it reopens counts from that void moment (CaseDesk.step sets `callFrom` to it), not from
 ///      the poke that plays it (MECHANICS "Known limitations"). The finality does not depend on when somebody pokes:
 ///      the submission is final at `appealedAt + 6 h + 24 h`.
+/// forge-config: default.isolate = false
 contract LazyAppealVoidWindowTest is Base {
     uint256 internal t;
     uint256 internal s;
