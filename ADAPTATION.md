@@ -141,12 +141,18 @@ arrived. All ten reproduce exactly as described. None is changed: the brief fixe
   (`block.timestamp <= openAt`) and the trades (`block.timestamp >= openAt + 3600`, a plain ERC-20 from minute 60), or
   sells less than the whole balance in minutes 0-60, and the floor as read does neither. The earlier wording of this
   note ("passes at `openAt + 3600`") assumed such a warp; it is corrected here. The reviewer's proof
-  (`Proof_5837de984c2c.t.sol`) replays the round trip at `openAt` and fails `ERC20InsufficientBalance` on this code,
-  as it must by the brief's own arithmetic; it is answered as disputed because it asserts a whole-balance sell in
-  minutes 0-30, which the brief forbids, and no change the brief permits (openAt may only move later; the taxes, the
-  schedule and `src/` are fixed) could make it pass. The project's own rehearsal against the live factory
+  (`Proof_5837de984c2c.t.sol`, re-issued unchanged as `Proof_120634a4c498.t.sol` in the second round) replays the
+  round trip at `openAt` and fails `ERC20InsufficientBalance` on this code, as it must by the brief's own arithmetic
+  (1,000 x 5,400,000 / 12,600,000 = 428.571 YOLO to the project wallet first, 571.43 left for a 1,000 settle); it is
+  answered as disputed because it asserts a whole-balance sell in minutes 0-30, which the brief forbids, and no change
+  the brief permits (openAt may only move later; the taxes, the schedule and `src/` are fixed) could make it pass.
+  The incompatibility is wider than the sell tax: at every `T < openAt` the floor's buy fails `TradingNotOpen`, at
+  every `T > openAt` its deployment fails `BadOpenAt`, so even a zero sell tax at minute 0 would leave the floor
+  passing at exactly one timestamp that nobody picks on purpose. The project's own rehearsal against the live factory
   (`test/fork/LaunchRehearsal.fork.t.sol`) warps through the first hour and passes. The decision is the owner's or
-  the floor operator's: run the floor's trades at a warped clock, or change the token's design, which this task may not.
+  the floor operator's: run the floor's trades at a warped clock (deploy at `block.timestamp <= openAt`, trade at
+  `>= openAt + 3600`), or change the token's design, which this task may not. The second-round reviewer agrees on
+  every point of this analysis and keeps the item open for that decision; nothing here can close it.
 - **Snapshot not sealed yet** (above). Unsealed at `openAt`, minutes 0-30 are closed to everyone; the window cannot
   be reopened later. The project wallet's job before 1792584000.
 - **The launch deadline** (revision, 20 Oct 2026 ~23:40 UTC, chain time ~1792539500: about 12.4 hours to `openAt`).
@@ -166,7 +172,7 @@ arrived. All ten reproduce exactly as described. None is changed: the brief fixe
   the warp in a later window than intended. The repository's own tests use literal bases (`vm.warp(1_800_000_000)`,
   `yolo.openAt() + …`) and are unaffected; the scratch reproductions had to do the same.
 
-## Revision: the independent review's findings (20 Oct 2026), each reproduced, recorded as notes
+## Revision: the independent review's findings (20 and 21 Oct 2026), each reproduced, recorded as notes
 
 The accepted work was reopened with nine findings from an independent reviewer. Each was checked against the code;
 all nine describe the code correctly. None is changed: each is the brief's fixed design or a fixed number, and the
@@ -174,10 +180,18 @@ brief forbids changing the token, the schedule, the taxes, the prices, the timel
 that reopened the work are the floor clock and the launch deadline, both detailed under "Further observations" above.
 The answers to the reviewer are in `.imd-responses.json`.
 
+**Second round (21 Oct 2026, ~01:30 UTC).** The reviewer re-ran the proof on the accepted tree (no change in `src/`
+or `script/`, so the same failure), agreed with the analysis of item 1, re-labelled items 3 to 8 "settled, no change
+needed" and kept item 1 open as a decision for the owner or the floor operator. This round re-reproduced the proof
+(below), answered all findings again in `.imd-responses.json` (item 1 disputed on the same ground, with the wider
+clock argument now under "Further observations"), and changed no code. The ten audit findings as they arrived are
+answered in the same file, each pointing at its note above.
+
 1. **[high] The floor's buy-then-sell-all round trip passes at no block timestamp (`YoloToken.sol:74`).** Correct,
-   and reproduced with the reviewer's proof (fails `ERC20InsufficientBalance(trader, 571428571428571428572, 1e21)`).
-   Disputed as a code defect: the proof asserts a whole-balance sell in minutes 0-30, which the brief's on-top 30% sell
-   tax forbids by construction. Open item for the owner / floor operator; see above.
+   and reproduced with the reviewer's proof (fails `ERC20InsufficientBalance(trader, 571428571428571428572, 1e21)`),
+   in both rounds. Disputed as a code defect: the proof asserts a whole-balance sell in minutes 0-30, which the brief's
+   on-top 30% sell tax forbids by construction; no permitted change makes it pass. Open item for the owner / floor
+   operator; see above.
 2. **[medium] Launch reverts `BadOpenAt` if mined after 1792584000; the gate must be sealed before `openAt`
    (`YoloToken.sol:74`).** Correct; operational deadline, by design; the brief's fallback (`openAt` at most
    1792594800) is the manifest step's if needed. See above.
@@ -221,9 +235,16 @@ The answers to the reviewer are in `.imd-responses.json`.
   the revision, so the suite is the one that was accepted; what was rerun in the revision is listed next.
 - Revision: the reviewer's proof `Proof_5837de984c2c.t.sol`, copied under `test/scratch/`, fails
   `ERC20InsufficientBalance(trader, 571428571428571428572, 1000000000000000000000)` on this code, as the reviewer
-  reported and as the brief's arithmetic requires.
+  reported and as the brief's arithmetic requires. Second round: the re-issued `Proof_120634a4c498.t.sol` (same
+  test) fails the same way on this tree; see the end of this section for what was run in that round.
 - `FORK_URL=<mainnet RPC> forge test --match-path test/fork/LaunchRehearsal.fork.t.sol` at block 26,236,321: 2 passed
   (`test_fourLaunchesFitAndWork`, `test_swarmWorkerSellTax`): all four launches through the live ProjectFactory under
   the gas cap, the first hour's trades through the live Universal Router, tasks end to end, the burner's forwards.
 - Scratch reproductions (`test/scratch/AuditRepro.t.sol`, deleted before submission): 12 passed (the ten findings, the
   floor clock matrix, the launch flows).
+- Second round (21 Oct 2026, 01:30-01:55 UTC, no code change): cold `forge build` of the 176 files, 15m40s on this
+  2-core machine (the previous attempt's check was stopped during this build; nothing else changed between the two);
+  `test/scratch/Proof_120634a4c498.t.sol` fails `ERC20InsufficientBalance(trader, 571428571428571428572, 1e21)`,
+  as the reviewer reported; `forge test --no-match-path "test/scratch/*"` with the verifier's fuzz seed: 686 passed,
+  0 failed, 3 skipped (the fork tests without `FORK_URL`), 87 suites in 95 s. The fork rehearsal was not rerun this
+  round (no source changed since it last passed at block 26,236,321).
