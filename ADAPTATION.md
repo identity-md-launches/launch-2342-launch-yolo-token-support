@@ -127,19 +127,37 @@ arrived. All ten reproduce exactly as described. None is changed: the brief fixe
 
 ## Further observations from this review (no change)
 
-- **The custom-token floor's trade check against the token's clock** (`Token.protected.t.sol`,
-  `test_theSeedAndASwapEachWaySucceed`: an ordinary trader buys from the pool and sells the whole amount back). The
-  token's constructor requires `openAt >= block.timestamp`, so at the deployment time a buy out of the PoolManager
-  reverts `TradingNotOpen` until `openAt`; in minutes 0-60 after `openAt` a sell of everything the trader holds reverts
-  (the sell tax is taken on top, from the seller's wallet: 100 held, 100 settled into the pool, the 30/70 tax has no
-  balance left); from minute 60 both pass. Reproduced in a scratch matrix (deployment time, minute 0, minute 45,
-  minute 60; no code at the gate address = no whitelist, as on a bare chain). So that floor test passes only if the
-  floor runs it at a block time at least `openAt + 3600`, i.e. more than an hour after the deployment it simulates.
-  This is the token's documented behaviour, fixed by the brief ("before it every buy reverts TradingNotOpen(openAt),
-  seeding works"), and the project's own rehearsal against the live factory warps through the first hour. Nothing
-  here can change it without changing the token; recorded so the floor's clock is set knowingly.
+- **The custom-token floor's trade check against the token's clock: open item for the owner and the floor operator**
+  (`Token.protected.t.sol`, `test_theSeedAndASwapEachWaySucceed`: the token is deployed in `setUp`, then, at the same
+  block timestamp, an ordinary trader buys from the pool and sells back everything it holds; the floor never warps).
+  Three rules of the brief, each fixed, meet there: the constructor refuses `openAt < block.timestamp` (`BadOpenAt`),
+  a buy out of the PoolManager before `openAt` reverts `TradingNotOpen`, and from `openAt` to minute 30 a sell pays
+  30% on top of what goes into the pool (100 sold: 70 to the pool, 30 to the project wallet). So the only timestamp at
+  which the constructor and the buy both pass is exactly `openAt`, and at that instant a trader holding exactly what
+  it bought cannot settle all of it into the pool: the tax leg takes 3/7 of the balance first, then the main transfer
+  fails `ERC20InsufficientBalance` (reproduced: 1,000 YOLO bought, 571.43 left after the tax leg, 1,000 wanted; at
+  forge's default timestamp 1 the constructor itself reverts `BadOpenAt`). **There is no single block timestamp at
+  which this floor test passes for this token.** It passes only if the harness warps between the deployment
+  (`block.timestamp <= openAt`) and the trades (`block.timestamp >= openAt + 3600`, a plain ERC-20 from minute 60), or
+  sells less than the whole balance in minutes 0-60, and the floor as read does neither. The earlier wording of this
+  note ("passes at `openAt + 3600`") assumed such a warp; it is corrected here. The reviewer's proof
+  (`Proof_5837de984c2c.t.sol`) replays the round trip at `openAt` and fails `ERC20InsufficientBalance` on this code,
+  as it must by the brief's own arithmetic; it is answered as disputed because it asserts a whole-balance sell in
+  minutes 0-30, which the brief forbids, and no change the brief permits (openAt may only move later; the taxes, the
+  schedule and `src/` are fixed) could make it pass. The project's own rehearsal against the live factory
+  (`test/fork/LaunchRehearsal.fork.t.sol`) warps through the first hour and passes. The decision is the owner's or
+  the floor operator's: run the floor's trades at a warped clock, or change the token's design, which this task may not.
 - **Snapshot not sealed yet** (above). Unsealed at `openAt`, minutes 0-30 are closed to everyone; the window cannot
   be reopened later. The project wallet's job before 1792584000.
+- **The launch deadline** (revision, 20 Oct 2026 ~23:40 UTC, chain time ~1792539500: about 12.4 hours to `openAt`).
+  The token is the first contract `launchCustom` creates; its constructor reverts `BadOpenAt(1792584000)` in any block
+  with `block.timestamp > 1792584000`, and that revert fails the whole launch transaction (reproduced: at a warp of
+  1792584001 the constructor reverts, at 1792584000 it deploys). This is the brief's fixed behaviour, not a defect,
+  and `openAt` is not changed here. The brief's one fallback is the manifest step's and the owner's: if the launch
+  cannot be mined before 1792584000, `openAt` (the token's fourth constructor argument) may be set later, at most to
+  1792594800 (21 Oct 2026 15:00 UTC); past that the job fails. Whichever `openAt` is used, the NftGate must be sealed
+  strictly before it, or minutes 0-30 are closed to everyone (`SnapshotNotSealed`); the gate's `sealedAt()` was still 0
+  at the last read.
 - **Buy tax rounding.** `value * 3000 * (3600 - e) / 18,000,000` rounds down (the buyer keeps the dust);
   `_sellTax` rounds down too (the pool gets exactly what the swap settles, the project wallet the floor of its share).
   Matches the brief.
@@ -148,11 +166,62 @@ arrived. All ten reproduce exactly as described. None is changed: the brief fixe
   the warp in a later window than intended. The repository's own tests use literal bases (`vm.warp(1_800_000_000)`,
   `yolo.openAt() + …`) and are unaffected; the scratch reproductions had to do the same.
 
+## Revision: the independent review's findings (20 Oct 2026), each reproduced, recorded as notes
+
+The accepted work was reopened with nine findings from an independent reviewer. Each was checked against the code;
+all nine describe the code correctly. None is changed: each is the brief's fixed design or a fixed number, and the
+brief forbids changing the token, the schedule, the taxes, the prices, the timelock or any line of `src/`. The two
+that reopened the work are the floor clock and the launch deadline, both detailed under "Further observations" above.
+The answers to the reviewer are in `.imd-responses.json`.
+
+1. **[high] The floor's buy-then-sell-all round trip passes at no block timestamp (`YoloToken.sol:74`).** Correct,
+   and reproduced with the reviewer's proof (fails `ERC20InsufficientBalance(trader, 571428571428571428572, 1e21)`).
+   Disputed as a code defect: the proof asserts a whole-balance sell in minutes 0-30, which the brief's on-top 30% sell
+   tax forbids by construction. Open item for the owner / floor operator; see above.
+2. **[medium] Launch reverts `BadOpenAt` if mined after 1792584000; the gate must be sealed before `openAt`
+   (`YoloToken.sol:74`).** Correct; operational deadline, by design; the brief's fallback (`openAt` at most
+   1792594800) is the manifest step's if needed. See above.
+3. **[low] DevPrices starts YOLO at $0.001, about 12.12x the pool's opening price (`script/LaunchPlan.sol:74`).**
+   Correct: the pool opens at 15,000 IMD x $5.5 / 1e9 = $0.0000825 per YOLO. `yoloValue(USDC, 100e6)` = 100,000 YOLO
+   at the start price against 1,212,121 YOLO at the pool price, so until the dev wallet lowers the price a doer earns the
+   full stake bonus with about 1/12 of the YOLO the reward is worth. Prices never decide who is paid; they only size the
+   stake bonus. The step limit (`MAX_STEP` = 10) means one `setYoloPriceUsd(82.5e12)` reverts `PriceSanity`; two calls
+   (1e14, then 82.5e12) land it. The start price is fixed by the brief; operational note for the dev wallet.
+4. **[low] `transferFrom` into the PoolManager in the first hour debits the allowance for `value` and the sell tax
+   from the owner on top (`YoloToken.sol:133`).** Correct: approve 70, `transferFrom(H, PM, 70)` at `openAt + 1` moves
+   100 from H (30 to the project wallet), allowance 0. The documented on-top design; a router or spender settles exactly
+   what it asked for, the holder pays the tax. Note only.
+5. **[low] Contradictory attester proposals for one address coexist (`ParamsRegistry.sol:177`).** Correct:
+   `(A, true)` and `(A, false)` are separate keys (`keccak256(abi.encode(attester, allowed))`), so both can be executed
+   after 48 h by anyone, in either order, and the later execution decides. The owner can `cancelAttester` either one;
+   the last attester can never be removed. Timelock mechanics are fixed by the brief; operational rule: never leave
+   both directions pending for one address.
+6. **[info] The project wallet's own buys and sells are effectively untaxed (`YoloToken.sol:133`).** Correct: with
+   `from == taxRecipient` the tax leg is a self-transfer; a sell of 70 from the project wallet at `openAt` lowers its
+   balance by 70, not 100, and a buy's tax lands back in its own wallet. Nothing is lost or created; the exemption is
+   implicit in "tax paid to the project wallet". Note only.
+7. **[info] `AttestationChecker` treats `expiresAt == 0` as never expiring and does not compare `issuedAt` to the
+   clock (`AttestationChecker.sol:54`).** Correct and documented in the contract's NatSpec ("0 = no expiry");
+   `issuedAt` is part of the signed digest, so it cannot be altered, only not checked against the clock. An attester
+   signature is still required, so there is no bypass; the swarm's attester decides whether to sign an answer without
+   an expiry. Note only.
+8. **[info] `buyTaxBps()` / `sellTaxBps()` round to whole bps while the charged tax is not rounded (`YoloToken.sol:93`).**
+   Correct: at `openAt + 1801` the view says 2998 bps while a 1e24 buy pays 299,833.33e18 (2998.33 bps). The views are
+   informational; `sellTax(intoPool)` and the `_update` arithmetic are exact. Integrators should use `sellTax()`.
+9. (merged into 1 by the reviewer) **A whole-balance sell in minutes 0-60 reverts.** Same root cause as 1: the tax is
+   on top, so a seller must keep `sellTax(amount)` in the wallet, or sell `balance x (10000 x 1800 - num) / (10000 x
+   1800)`. Documented behaviour.
+
 ## Verification
 
-- `forge build`: succeeds (warnings only, unchanged from the arrival state).
+- `forge build`: succeeds (warnings only, unchanged from the arrival state). A cold build of the 176 files with
+  `via_ir` takes about 8m40s on the task machine.
 - `forge test` with `FOUNDRY_FUZZ_SEED=0xa7e6d465f44313e5b383a0fb0c3d65be95bc04ed142fef126b8d1fa92192855a`:
-  686 passed, 0 failed, 3 skipped (the fork tests without `FORK_URL`), as the brief states.
+  686 passed, 0 failed, 3 skipped (the fork tests without `FORK_URL`), as the brief states. No line of code changed in
+  the revision, so the suite is the one that was accepted; what was rerun in the revision is listed next.
+- Revision: the reviewer's proof `Proof_5837de984c2c.t.sol`, copied under `test/scratch/`, fails
+  `ERC20InsufficientBalance(trader, 571428571428571428572, 1000000000000000000000)` on this code, as the reviewer
+  reported and as the brief's arithmetic requires.
 - `FORK_URL=<mainnet RPC> forge test --match-path test/fork/LaunchRehearsal.fork.t.sol` at block 26,236,321: 2 passed
   (`test_fourLaunchesFitAndWork`, `test_swarmWorkerSellTax`): all four launches through the live ProjectFactory under
   the gas cap, the first hour's trades through the live Universal Router, tasks end to end, the burner's forwards.
