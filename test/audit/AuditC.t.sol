@@ -40,6 +40,7 @@ contract TextHarness {
 }
 
 /// @title Submission and dispute checks: regression tests and guards.
+/// forge-config: default.isolate = false
 contract AuditCTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;
@@ -138,7 +139,7 @@ contract AuditCTest is Base {
         assertEq(uint8(_sub(s).nftDecision), uint8(Verdict.None));
         assertEq(vault.getDispute(s).votesAccept, 0, "and counts nothing");
 
-        // only holders' own votes count: here the reject holder votes first, and his own 115 decide at once 
+        // only holders' own votes count: here the reject holder votes first, and his own 115 decide at once
         // (each holder sends his own vote with the ids of NFTs he holds; nobody votes another's NFTs)
         vm.prank(rVoter);
         _submitVotes(s, rejectBallot);
@@ -164,7 +165,8 @@ contract AuditCTest is Base {
         _dispute(dave, s);
 
         Ballot[] memory acceptBallot = new Ballot[](1);
-        acceptBallot[0] = Ballot({voter: aVoter, side: ACCEPT, payTo: aVoter, tokenIds: new uint256[](0), signature: ""});
+        acceptBallot[0] =
+            Ballot({voter: aVoter, side: ACCEPT, payTo: aVoter, tokenIds: new uint256[](0), signature: ""});
         Ballot[] memory rejectBallot = new Ballot[](1);
         rejectBallot[0] = _ballotByKey(s, rKey, REJECT, _ids(1000, 15), rVoter, _sub(s).voteEnd);
 
@@ -259,6 +261,4 @@ contract AuditCTest is Base {
         assertEq(h.fast(string(b), 256), _refValid(b, 256));
         assertEq(h.fast(string(raw), 256), _refValid(raw, 256));
     }
-
-
 }

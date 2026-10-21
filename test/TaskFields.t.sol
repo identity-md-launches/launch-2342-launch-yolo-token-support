@@ -5,6 +5,7 @@ import "./Base.t.sol";
 import {ParamsBounds} from "../src/VaultParams.sol";
 
 /// @dev Title, condition, proof type and the proof format checked at submit; what reaches the swarm question.
+/// forge-config: default.isolate = false
 contract TaskFieldsTest is Base {
     string internal constant COND = "Post a thread on X about IMD with moneycanbuy.fun in the last post";
     string internal constant TX = "0x5f3a9c0d2b7e41a8c6f09d3e7b25a1c4e8f60b9d2a7c3e15f4b8d06a9c2e7f13";
@@ -42,7 +43,9 @@ contract TaskFieldsTest is Base {
     function test_Title_InEventOnly_Limits() public {
         uint256 next = vault.taskCount() + 1;
         vm.expectEmit(address(vault));
-        emit TaskCreated(next, author, address(usdc), 50e6, uint64(_now() + TTL), "Thread on X", rulesOf(COND), 1, PROOF_X_POST, "");
+        emit TaskCreated(
+            next, author, address(usdc), 50e6, uint64(_now() + TTL), "Thread on X", rulesOf(COND), 1, PROOF_X_POST, ""
+        );
         _task("Thread on X", COND, PROOF_X_POST);
 
         _task("T", COND, 0); // 1 byte
@@ -59,7 +62,12 @@ contract TaskFieldsTest is Base {
         _expectCreateRevert(bad, string(bytes(hex"c0af")), COND, 0); // non-ASCII byte
         _expectCreateRevert(bad, string(bytes(hex"d0")), COND, 0); // non-ASCII byte
         // only English (printable ASCII): accented Latin and emoji revert, any byte length
-        _expectCreateRevert(bad, "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9", COND, 0);
+        _expectCreateRevert(
+            bad,
+            "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9",
+            COND,
+            0
+        );
         _expectCreateRevert(bad, unicode"title with an emoji 👀", COND, 0);
     }
 
@@ -252,7 +260,12 @@ contract TaskFieldsTest is Base {
         );
         vm.prank(doer);
         vault.submit(
-            t, string(abi.encodePacked("https://github.com/", _bytes("a", 237))), _noEvidence(), 0, type(uint256).max, _noSwap()
+            t,
+            string(abi.encodePacked("https://github.com/", _bytes("a", 237))),
+            _noEvidence(),
+            0,
+            type(uint256).max,
+            _noSwap()
         );
     }
 
@@ -270,7 +283,8 @@ contract TaskFieldsTest is Base {
 
     function test_SwarmQuestion_ProofTypeIn_TitleOut() public {
         string[4] memory names = ["x_post", "video", "onchain_tx", "link"];
-        string[4] memory proofs = ["https://x.com/doer/status/1", "https://youtu.be/dQw4w9WgXcQ", TX, "https://github.com/p"];
+        string[4] memory proofs =
+            ["https://x.com/doer/status/1", "https://youtu.be/dQw4w9WgXcQ", TX, "https://github.com/p"];
         for (uint8 k; k < PROOF_TYPE_COUNT; ++k) {
             uint256 t = _task("SECRET-TITLE-xyz", COND, k);
             vm.prank(doer);
@@ -320,7 +334,9 @@ contract TaskFieldsTest is Base {
     ///      and noIf fixed at TEST_RULE_PROOF/TEST_RULE_NO) and disputes via `_dispute` (fixed reason/proof link),
     ///      so `cond` is the only text that varies; this resupplies the rest to match.
     function _previewBody(uint256 s, string memory cond) internal view returns (bytes memory body) {
-        (body,) = vault.previewSwarmBody(s, 2, RuleTexts(cond, TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF));
+        (body,) = vault.previewSwarmBody(
+            s, 2, RuleTexts(cond, TEST_RULE_PROOF, TEST_RULE_NO, DISPUTE_REASON, DISPUTER_PROOF)
+        );
     }
 
     /// @dev The longest question the parameter bounds allow stays within the Intake limit of 2000.
@@ -363,9 +379,7 @@ contract TaskFieldsTest is Base {
         emit log_named_uint("createTask (title 21 B, condition 64 B)", g - gasleft());
         g = gasleft();
         vm.prank(doer);
-        vault.submit(
-            t, "https://youtu.be/dQw4w9WgXcQ", Evidence(_SCREENSHOT, ""), 0, type(uint256).max, _noSwap()
-        );
+        vault.submit(t, "https://youtu.be/dQw4w9WgXcQ", Evidence(_SCREENSHOT, ""), 0, type(uint256).max, _noSwap());
         emit log_named_uint("submit (video link)", g - gasleft());
         uint256 t2 = _task("Mint", COND, PROOF_ONCHAIN_TX);
         g = gasleft();

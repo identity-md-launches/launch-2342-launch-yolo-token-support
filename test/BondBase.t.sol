@@ -6,6 +6,7 @@ import "./Base.t.sol";
 /// @dev The doer bond is 0.5 IMD + 3% and the dispute bond 0.5 IMD + 1% of the author's own reward
 ///      only. Top-ups of other contributors and the $YOLO add-on are no part of any bond; the loser's bond is split
 ///      in the currencies left (IMD and the reward currency). The author's own top-ups are their reward too.
+/// forge-config: default.isolate = false
 contract BondBaseTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

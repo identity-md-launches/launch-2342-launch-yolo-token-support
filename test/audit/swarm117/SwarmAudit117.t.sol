@@ -6,6 +6,7 @@ import "../../Base.t.sol";
 /// @dev Swarm audit 117cf05a of moneycanbuy d9a1ee5: regressions of findings #3 to #10 (the report gave no source for
 /// these; each test follows the report's reproduction and fails on d9a1ee5). #2:
 /// VestingClockPreStart.t.sol. #11 (Intake version 2): ReviewLaunch.test_L2 against docs/LAUNCH-TASK.md.
+/// forge-config: default.isolate = false
 contract SwarmAudit117Test is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;
@@ -92,7 +93,6 @@ contract SwarmAudit117Test is Base {
 
     // #6 sweetener tests: SwarmAudit117SweetenerTest below (split keeps this contract off solc's 64 KiB tag
     // boundary, "Tag too large for reserved space").
-
 
     // ------------------------------------------------------------------ #7 a late answer vs the poke order
     // (the timing rule on a paid call without an NFT decision)
@@ -284,6 +284,7 @@ contract SwarmAudit117Test is Base {
     }
 }
 
+/// forge-config: default.isolate = false
 contract SwarmAudit117SweetenerTest is Base {
     function _completedSweetened(uint256 bonus) internal returns (uint256 t, uint256 s) {
         t = _create(author, address(usdc), 100e6);
@@ -334,5 +335,4 @@ contract SwarmAudit117SweetenerTest is Base {
         assertEq(yolo.balanceOf(alice), aliceBefore, "nothing back to the sweetener");
         _claimEverythingAndCheck();
     }
-
 }

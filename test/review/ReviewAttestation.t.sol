@@ -12,6 +12,7 @@ import {ParamsBounds} from "../../src/VaultParams.sol";
 ///      Guard: the parameters `minPanelSize = 7` and `minQuorum = 5` (paired with bodyFields, hard limits, changed
 ///      through a 48 h timelock). An attestation of a smaller panel or quorum is not a verdict: it is discarded
 ///      (code 14), the question ends in the swarm's silence, the money stays with those who put it in.
+/// forge-config: default.isolate = false
 contract ReviewAttestation is Base {
     function setUp() public override {
         super.setUp();

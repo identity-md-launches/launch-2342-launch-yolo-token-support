@@ -8,6 +8,7 @@ import "../../src/VaultTypes.sol";
 ///      and a contributor dispute; the doer or a contributor calls the swarm / appeals). After all payouts: the
 ///      vault owes nothing and holds nothing; IMD is conserved; the reward (USDC) only goes to the doer, NFT
 ///      votes, and the treasury; contributors get back no more than they put in.
+/// forge-config: default.isolate = false
 contract ReviewRoles is Base {
     struct Case {
         uint8 d0; // disputers: index in people (0 = none)

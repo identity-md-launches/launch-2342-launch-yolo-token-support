@@ -8,6 +8,7 @@ import "./Base.t.sol";
 ///      minRewardYolo in $YOLO itself (no USD limit), no price is read at task creation,
 ///      the treasury's share of a $YOLO reward burned, the reward
 ///      locked until the deadline.
+/// forge-config: default.isolate = false
 contract YoloTest is Base {
     // sized relative to the test YOLO and IMD prices set in Base.t.sol
     uint256 constant R = 2_000_000e18;
@@ -29,9 +30,13 @@ contract YoloTest is Base {
         // the reward and the doer's own rew bond are both credited (never pushed straight to their
         // wallet) on acceptance, so nothing here is paid "direct" outside the credits ledger; `_paidDirect` would
         // underflow regardless (they already paid their bond out of their wallet balance, not yet refunded as a balance).
-        assertEq(vault.credits(address(yolo), doer), R * 90 / 100 + _bondOf(R), "R - 10% in YOLO, plus his rew bond back");
+        assertEq(
+            vault.credits(address(yolo), doer), R * 90 / 100 + _bondOf(R), "R - 10% in YOLO, plus his rew bond back"
+        );
         assertEq(vault.treasuryPot(address(yolo)), 0, "the treasury never holds $YOLO");
-        assertEq(yolo.balanceOf(address(burner)) - dead0, R / 10, "the treasury's 10% in $YOLO burned (no stake, no NFT)");
+        assertEq(
+            yolo.balanceOf(address(burner)) - dead0, R / 10, "the treasury's 10% in $YOLO burned (no stake, no NFT)"
+        );
         _claimEverythingAndCheck();
     }
 
@@ -53,7 +58,9 @@ contract YoloTest is Base {
     function test_YoloBelowMinimumRefused() public {
         vm.prank(author);
         vm.expectRevert(RewardTooSmall.selector);
-        vault.createTask(address(yolo), 1_000e18 - 1, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap());
+        vault.createTask(
+            address(yolo), 1_000e18 - 1, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, 0, "", _noSwap()
+        );
     }
 
     /// A task without a deadline cannot be created.
@@ -70,8 +77,9 @@ contract YoloTest is Base {
         oracle.set(address(yolo), 0, 18); // no $YOLO price
         assertFalse(oracle.hasPrice(address(yolo)));
         vm.prank(author);
-        uint256 t =
-            vault.createTask(address(yolo), R, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap());
+        uint256 t = vault.createTask(
+            address(yolo), R, uint64(_now() + 1 days), "Title", rulesOf("c"), 0, PROOF_LINK, "", _noSwap()
+        );
         trackedTasks.push(t);
 
         vm.prank(alice);

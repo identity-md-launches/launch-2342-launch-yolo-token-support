@@ -7,6 +7,7 @@ import "../../src/VaultTypes.sol";
 
 /// @notice Reaudit money #3: an add-on sweetened during the review is paid to the right votes by the batch
 ///         claimVoterRewards too, also when the submission itself carries no add-on (s.addon == 0).
+/// forge-config: default.isolate = false
 contract AddonAfterSubmissionTest is Base {
     function test_AddonAfterSubmission_BatchClaimPaysSweetener() public {
         uint256 t = _create(author, address(usdc), 100e6);

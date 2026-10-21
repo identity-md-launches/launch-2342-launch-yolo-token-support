@@ -8,6 +8,7 @@ import {YoloPredict} from "../../src/YoloPredict.sol";
 /// @dev Predictions are paused only while a submission is active. A submission rejected by the NFT whose 24 h
 ///      appeal window has passed is over even if nobody has poked the vault yet: predict plays the vault's timers
 ///      first (vault.poke, as settle does), so the position goes through.
+/// forge-config: default.isolate = false
 contract PredictAfterTimerTest is Base {
     YoloPredict internal yoloPredict;
     uint256 internal t;

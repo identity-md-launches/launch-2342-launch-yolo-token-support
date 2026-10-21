@@ -5,6 +5,7 @@ import "../Base.t.sol";
 
 /// @dev Swarm answers only through the Intake callback, votes only from the holder's own transaction,
 ///      the doer never disputes his own submission. Errors are matched by signature.
+/// forge-config: default.isolate = false
 contract AuditNoFallbackOwnVoteTest is Base {
     uint8 internal constant ACCEPT = 1;
     uint8 internal constant REJECT = 2;

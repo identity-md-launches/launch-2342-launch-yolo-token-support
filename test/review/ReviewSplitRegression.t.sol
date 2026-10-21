@@ -59,11 +59,17 @@ abstract contract SplitScenarios is Base {
         vault.poke(t);
         assertEq(uint8(_sub(s).outcome), uint8(Outcome.Accepted));
         assertEq(uint8(_sub(s).nftDecision), uint8(Verdict.Accept));
-        assertEq(vault.credits(address(usdc), doer), 135e6 + 3e6 + 0.5e6, "90% of R, his bond back, half of dave's bond");
+        assertEq(
+            vault.credits(address(usdc), doer), 135e6 + 3e6 + 0.5e6, "90% of R, his bond back, half of dave's bond"
+        );
         assertEq(vault.getSettlement(s).voterBond.rew, 0.5e6, "half of dave's 1 USDC");
         assertEq(vault.treasuryPot(address(usdc)), 7.5e6);
         assertEq(vault.getSettlement(s).voterFee, 7.5e6);
-        assertEq(vault.credits(address(imd), doer), _fixedBond() + _fixedBond() / 2, "fixed bond back + half of dave's 0.5 IMD");
+        assertEq(
+            vault.credits(address(imd), doer),
+            _fixedBond() + _fixedBond() / 2,
+            "fixed bond back + half of dave's 0.5 IMD"
+        );
         assertEq(vault.getSettlement(s).voterBond.imd, _fixedBond() / 2, "half of dave's 0.5 IMD");
         assertEq(vault.treasuryPot(address(imd)), 0);
         (a, b) = (_ledger(), _settled(s));
@@ -105,7 +111,9 @@ abstract contract SplitScenarios is Base {
             "erin: bond back + stranger carve-out + rew-leg carve-out (no fee refund)"
         );
         assertEq(vault.getSettlement(s).disputerReward.rew, 0.45e18, "dave's unclaimed share of the rew-leg penalty");
-        assertEq(vault.getSettlement(s).disputerReward.imd, 0, "erin's stranger carve-out took the whole fixed-leg penalty");
+        assertEq(
+            vault.getSettlement(s).disputerReward.imd, 0, "erin's stranger carve-out took the whole fixed-leg penalty"
+        );
         assertEq(vault.getSettlement(s).voterBond.imd, 0);
         assertEq(vault.treasuryPot(address(imd)), 0);
         (a, b) = (_ledger(), _settled(s));
@@ -127,7 +135,9 @@ abstract contract SplitScenarios is Base {
         vault.poke(t); // accepted: undecided, nobody called
         assertEq(uint8(_sub(s).outcome), uint8(Outcome.Accepted));
         assertEq(uint8(_sub(s).nftDecision), uint8(Verdict.None));
-        assertEq(vault.credits(ETH, doer), 0.018 ether + 0.0006 ether + 0.0002 ether, "90% of R, his bond and dave's bond");
+        assertEq(
+            vault.credits(ETH, doer), 0.018 ether + 0.0006 ether + 0.0002 ether, "90% of R, his bond and dave's bond"
+        );
         assertEq(vault.treasuryPot(ETH), 0.002 ether, "the whole 10% (no author fee)");
         assertEq(vault.credits(address(imd), doer), _fixedBond() + _fixedBond(), "his fixed bond + dave's");
         assertEq(vault.treasuryPot(address(imd)), 0);
@@ -164,7 +174,11 @@ abstract contract SplitScenarios is Base {
         assertEq(vault.getSettlement(s).voterBond.rew, 0.75e18);
         assertEq(vault.getSettlement(s).disputerReward.imd, _fixedBond() / 2);
         assertEq(vault.getSettlement(s).disputerReward.rew, 0.75e18);
-        assertEq(vault.credits(address(imd), doer2), 49.5e18 + 1.5e18 + _fixedBond(), "90% of R (50 + bob 5), his rew bond, his fixed bond");
+        assertEq(
+            vault.credits(address(imd), doer2),
+            49.5e18 + 1.5e18 + _fixedBond(),
+            "90% of R (50 + bob 5), his rew bond, his fixed bond"
+        );
         assertEq(vault.treasuryPot(address(imd)), 5.5e18);
         assertEq(_sub(s2).reward, 55e18, "bob's top-up during the check is in the reward");
         (a, b) = (_ledger(), keccak256(abi.encode(_settled(s), _settled(s2))));
@@ -200,9 +214,16 @@ abstract contract SplitScenarios is Base {
             _fixedBond() /* her bond.imd back */ + _fixedBond(), /* her stranger carve-out: the whole imd-leg penalty */
             "erin: bond back + stranger carve-out (no fee refund)"
         );
-        assertEq(vault.credits(address(usdc), erin), 0.6e6 /* her bond.rew back */ + 0.9e6, /* her pro-rata share */ "erin: bond + penalty share");
+        assertEq(
+            vault.credits(address(usdc), erin),
+            0.6e6 /* her bond.rew back */ + 0.9e6,
+            /* her pro-rata share */
+            "erin: bond + penalty share"
+        );
         assertEq(vault.getSettlement(s).disputerReward.rew, 0.9e6, "dave's unclaimed share");
-        assertEq(vault.getSettlement(s).disputerReward.imd, 0, "erin's stranger carve-out took the whole imd-leg penalty");
+        assertEq(
+            vault.getSettlement(s).disputerReward.imd, 0, "erin's stranger carve-out took the whole imd-leg penalty"
+        );
         (a, b) = (_ledger(), _settled(s));
         _claimEverythingAndCheck();
         c = _ledger();
@@ -211,6 +232,7 @@ abstract contract SplitScenarios is Base {
     // A task the dev wallet cancels (Unwound) is covered in CancelTask.t.sol.
 }
 
+/// forge-config: default.isolate = false
 contract ReviewSplitRegression is SplitScenarios {
     // ---------------------------------------------------------------- golden ledgers
     // Each constant below is a hash of the ledger (see _ledger) or the settlement record (see _settled) for one
@@ -307,14 +329,7 @@ contract ReviewSplitRegression is SplitScenarios {
     function test_minor_HeaviestLazyStepGasCost() public {
         uint256 t = _create(author, address(usdc), 50e6);
         vm.prank(doer3);
-        uint256 s = vault.submit(
-            t,
-            "https://x.com/doer/status/1",
-            Evidence("", R200),
-            0,
-            type(uint256).max,
-            _noSwap()
-        );
+        uint256 s = vault.submit(t, "https://x.com/doer/status/1", Evidence("", R200), 0, type(uint256).max, _noSwap());
         address d = makeAddr("disputer0");
         _fund(d); // the dispute bond's rew part is in the task's own currency (USDC here), not IMD
         vm.prank(d);

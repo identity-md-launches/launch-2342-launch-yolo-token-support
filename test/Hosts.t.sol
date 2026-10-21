@@ -7,6 +7,7 @@ import {TextRules} from "../src/helpers/TextRules.sol";
 /// @notice Host allowlist of proof and screenshot links (TextLib.checkHost): `https://`, at most
 /// MAX_LINK_BYTES, the host byte for byte from the list (one `www.` / `m.` / `mobile.` prefix dropped). The
 /// list itself is the one in src/helpers/TextRules.sol.
+/// forge-config: default.isolate = false
 contract HostsTest is Base {
     TextRules internal rules;
 
@@ -99,14 +100,35 @@ contract HostsTest is Base {
         uint256 t = _create(author, address(usdc), 50e6); // PROOF_LINK task: any allowlisted link
         vm.prank(doer);
         vm.expectRevert(HostNotAllowed.selector);
-        vault.submit(t, "https://x.com.evil.com/doer/status/1", Evidence("https://i.imgur.com/s.png", ""), 0, type(uint256).max, _noSwap());
+        vault.submit(
+            t,
+            "https://x.com.evil.com/doer/status/1",
+            Evidence("https://i.imgur.com/s.png", ""),
+            0,
+            type(uint256).max,
+            _noSwap()
+        );
         vm.prank(doer);
         vm.expectRevert(HostNotAllowed.selector);
-        vault.submit(t, "https://x.com/doer/status/1", Evidence("https://evil.com/x.com/s.png", ""), 0, type(uint256).max, _noSwap());
+        vault.submit(
+            t,
+            "https://x.com/doer/status/1",
+            Evidence("https://evil.com/x.com/s.png", ""),
+            0,
+            type(uint256).max,
+            _noSwap()
+        );
         vm.prank(doer);
         vm.expectRevert(BadText.selector);
         vault.submit(t, "", Evidence("https://i.imgur.com/s.png", ""), 0, type(uint256).max, _noSwap());
         vm.prank(doer);
-        vault.submit(t, "https://x.com/doer/status/1", Evidence("https://pbs.twimg.com/media/a.jpg", ""), 0, type(uint256).max, _noSwap());
+        vault.submit(
+            t,
+            "https://x.com/doer/status/1",
+            Evidence("https://pbs.twimg.com/media/a.jpg", ""),
+            0,
+            type(uint256).max,
+            _noSwap()
+        );
     }
 }

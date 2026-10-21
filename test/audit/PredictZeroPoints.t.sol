@@ -7,6 +7,7 @@ import "../../src/VaultTypes.sol";
 
 /// @notice Reaudit money #1: "nobody on the winning side" is decided by the pool, not by the points; a winning
 ///         side with 0 points in total splits the losing pool by position.
+/// forge-config: default.isolate = false
 contract PredictZeroPointsWinnerTest is Base {
     YoloPredict internal predict;
 
@@ -54,6 +55,7 @@ contract PredictZeroPointsWinnerTest is Base {
         assertEq(yolo.balanceOf(doer) - doerBefore, deferred - deferred / 2, "doer: only the deferred 2.5%");
         assertEq(yolo.balanceOf(alice) - aliceBefore, 0.9e18 + losingPool, "winner: 90% back + the losing pool");
     }
+
     /// @dev Two zero-point winners split the losing pool by position (0.9 : 2.7 of 90 YOLO); 100 years: 2.7 YOLO
     ///      a second before the deadline still floors to 0 points.
     function test_ZeroPointWinners_SplitByPosition() public {
