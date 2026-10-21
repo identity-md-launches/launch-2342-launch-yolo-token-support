@@ -252,6 +252,77 @@ contract LaunchSupportTokenTest is Test, LaunchValues {
         new NftGate(address(1), address(0));
     }
 
+    function test_Window_SealedExactlyAtOpenAtRefused_OneSecondBeforeAccepted() public {
+        address[] memory w = new address[](1);
+        uint256[] memory n = new uint256[](1);
+        w[0] = alice;
+        n[0] = 1;
+        // sealed at openAt itself: too late, the window stays shut
+        NftGate late = new NftGate(makeAddr("nft"), PROJECT);
+        YoloToken t1 = new YoloToken(pm, address(late), PROJECT, OPEN_AT);
+        t1.transfer(pm, 1_000_000e18);
+        // sealed one second before openAt: the window opens for the snapshot
+        NftGate early = new NftGate(makeAddr("nft"), PROJECT);
+        YoloToken t2 = new YoloToken(pm, address(early), PROJECT, OPEN_AT);
+        t2.transfer(pm, 1_000_000e18);
+        vm.startPrank(PROJECT);
+        late.record(w, n);
+        early.record(w, n);
+        vm.warp(OPEN_AT - 1);
+        early.seal(1);
+        vm.warp(OPEN_AT);
+        late.seal(1);
+        vm.stopPrank();
+        vm.prank(pm);
+        vm.expectRevert(YoloToken.SnapshotNotSealed.selector);
+        t1.transfer(alice, 1);
+        vm.prank(pm);
+        t2.transfer(alice, 500_000e18);
+        assertEq(t2.balanceOf(alice), 500_000e18);
+        assertEq(early.left(address(t2), alice), 0);
+    }
+
+    function test_Window_PoolToPoolAndZeroValueNotGated() public {
+        YoloToken t = _gatedToken();
+        vm.warp(OPEN_AT + 5);
+        // the PoolManager moving to itself and a zero-value buy by an outsider touch neither the gate nor the tax
+        vm.startPrank(pm);
+        t.transfer(pm, 1e18);
+        t.transfer(stranger, 0);
+        vm.stopPrank();
+        assertEq(t.balanceOf(PROJECT), 0);
+        assertEq(gate.used(address(t), stranger), 0);
+    }
+
+    function test_Gate_WriterOnly_AndNothingChangesAfterSeal() public {
+        gate = new NftGate(makeAddr("nft"), PROJECT);
+        address[] memory w = new address[](1);
+        uint256[] memory n = new uint256[](1);
+        w[0] = alice;
+        n[0] = 3;
+        vm.startPrank(stranger);
+        vm.expectRevert(NftGate.NotWriter.selector);
+        gate.record(w, n);
+        vm.expectRevert(NftGate.NotWriter.selector);
+        gate.seal(1);
+        vm.stopPrank();
+        vm.startPrank(PROJECT);
+        gate.record(w, n);
+        gate.seal(42);
+        w[0] = bob;
+        vm.expectRevert(NftGate.AlreadySealed.selector);
+        gate.record(w, n);
+        vm.expectRevert(NftGate.AlreadySealed.selector);
+        gate.seal(43);
+        vm.stopPrank();
+        assertEq(gate.snapshotBlock(), 42);
+        assertEq(gate.walletCount(), 1);
+        assertEq(gate.totalNfts(), 3);
+        assertEq(gate.allowanceOf(alice), 1_500_000e18);
+        assertEq(gate.nftsOf(bob), 0);
+        assertEq(gate.snapshotHash(), keccak256(abi.encode(bytes32(0), alice, uint256(3))));
+    }
+
     // ---------------------------------------------------------------- minutes 30-60 and after
 
     function test_Schedule_Edges_Buy() public {
@@ -664,5 +735,99 @@ contract LaunchSupportInvariantTest is Test, LaunchValues {
             assertEq(b.forwarded(t), h.ghostReceivedByWallets(t));
             assertEq(h.walletsHold(t), b.forwarded(t));
         }
+    }
+}
+
+/// @dev Drives buys in minutes 0-30 against a sealed gate: snapshot wallets with 1, 2 and 3 NFTs and one outsider.
+contract GateWindowHandler is Test, LaunchValues {
+    YoloToken public yolo;
+    NftGate public gate;
+    address public pm = address(0x9000);
+    address[4] public buyers = [address(0xC1), address(0xC2), address(0xC3), address(0xC4)];
+    mapping(address => uint256) public ghostBought;
+    uint256 public refused;
+
+    constructor() {
+        vm.warp(OPEN_AT - 1 days);
+        gate = new NftGate(address(0x1D), PROJECT);
+        yolo = new YoloToken(pm, address(gate), PROJECT, OPEN_AT);
+        yolo.transfer(pm, 150_000_000e18);
+        address[] memory w = new address[](3);
+        uint256[] memory n = new uint256[](3);
+        for (uint256 i; i < 3; ++i) {
+            w[i] = buyers[i];
+            n[i] = i + 1;
+        }
+        vm.startPrank(PROJECT);
+        gate.record(w, n);
+        gate.seal(block.number);
+        vm.stopPrank();
+        vm.warp(OPEN_AT);
+    }
+
+    function warp(uint256 dt) external {
+        // stay inside the window
+        uint256 next = block.timestamp + bound(dt, 0, 120);
+        vm.warp(next > OPEN_AT + 1799 ? OPEN_AT + 1799 : next);
+    }
+
+    function buy(uint256 who, uint256 amount) external {
+        address to = buyers[who % 4];
+        uint256 allowance = gate.allowanceOf(to);
+        uint256 used = gate.used(address(yolo), to);
+        amount = bound(amount, 1, 2_000_000e18);
+        vm.prank(pm);
+        if (allowance == 0) {
+            vm.expectRevert(abi.encodeWithSelector(YoloToken.NotWhitelisted.selector, to));
+            yolo.transfer(to, amount);
+            ++refused;
+            return;
+        }
+        if (amount > allowance - used) {
+            vm.expectRevert(
+                abi.encodeWithSelector(YoloToken.NftAllowanceExceeded.selector, to, allowance - used, amount)
+            );
+            yolo.transfer(to, amount);
+            ++refused;
+            return;
+        }
+        yolo.transfer(to, amount);
+        ghostBought[to] += amount;
+    }
+
+    /// @dev someone other than the token calling the gate directly
+    function poke(uint256 who, uint256 amount) external {
+        gate.consume(buyers[who % 4], bound(amount, 0, 2_000_000e18));
+    }
+}
+
+/// @notice Over random buy sequences in minutes 0-30: nobody takes more than 500,000 YOLO per NFT, the gate books exactly
+///         what was bought, outsiders get nothing, window buys are untaxed, and direct calls to the gate spend no token's
+///         books.
+contract LaunchSupportGateInvariantTest is Test, LaunchValues {
+    GateWindowHandler internal h;
+
+    function setUp() public {
+        h = new GateWindowHandler();
+        targetContract(address(h));
+    }
+
+    /// forge-config: default.invariant.runs = 64
+    /// forge-config: default.invariant.depth = 60
+    function invariant_GateBooksExactlyWhatWasBought_NeverAboveAllowance() public view {
+        NftGate g = h.gate();
+        YoloToken y = h.yolo();
+        uint256 total;
+        for (uint256 i; i < 4; ++i) {
+            address b = h.buyers(i);
+            assertEq(g.used(address(y), b), h.ghostBought(b));
+            assertEq(y.balanceOf(b), h.ghostBought(b));
+            assertLe(g.used(address(y), b), g.allowanceOf(b));
+            total += y.balanceOf(b);
+        }
+        assertEq(y.balanceOf(h.buyers(3)), 0);
+        assertEq(y.balanceOf(PROJECT), 0);
+        assertEq(y.balanceOf(h.pm()), 150_000_000e18 - total);
+        assertEq(y.totalSupply(), SUPPLY);
     }
 }
